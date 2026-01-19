@@ -1,0 +1,27 @@
+{
+	"editor": {
+		"allAngles": false,
+		"entityTextureMode": true
+	},
+	"textureWidth": 16,
+	"textureHeight": 16,
+	"textureSizes": {
+	},
+	"elements": [
+		{
+			"name": "tablet",
+			"from": [ 0.0, 0.0, 2.0 ],
+			"to": [ 16.0, 1.0, 14.0 ],
+			"autoUnwrap": false,
+			"uv": [ -13.5, -0.5 ],
+			"rotationOrigin": [ 0.0, 0.0, 2.0 ],
+			"faces": {
+				"north": { "texture": "#base", "uv": [ 0.0, 15.0, 16.0, 16.0 ] },
+				"east": { "texture": "#base", "uv": [ 0.0, 0.0, 12.0, 1.0 ] },
+				"south": { "texture": "#base", "uv": [ 0.0, 14.0, 16.0, 15.0 ] },
+				"west": { "texture": "#base", "uv": [ 0.0, 13.0, 12.0, 14.0 ] },
+				"up": { "texture": "#base", "uv": [ 0.0, 1.0, 16.0, 13.0 ], "snapUv": false },
+				"down": { "texture": "#base", "uv": [ 0.0, 1.0, 16.0, 13.0 ] }
+			}
+		}
+	]}
