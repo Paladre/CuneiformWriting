@@ -83,11 +83,11 @@ namespace CuneiformWriting.Gui
             GuiElementCustomDraw drawElement =
                 new GuiElementCustomDraw(capi, tabletBounds, OnDrawTablet);
 
-            SingleComposer = capi.Gui.CreateCompo("test", rootBounds)
+            SingleComposer = capi.Gui.CreateCompo("cuneiform", rootBounds)
                 .AddInteractiveElement(drawElement)
                 .Compose();
 
-            capi.ShowChatMessage("GUI with custom draw opened");
+            //capi.ShowChatMessage("GUI with custom draw opened");
             strokes = tabletItem.LoadStrokes(sourceSlot);
             RebuildMeshesFromStrokes();
         }
@@ -110,17 +110,14 @@ namespace CuneiformWriting.Gui
 
             if (e.Button == EnumMouseButton.Right)
             {
-                //mode = ToolMode.Thin;
                 type = StrokeType.thin;
             }
             else if (e.Button == EnumMouseButton.Left)
             {
-                //mode = ToolMode.Thick;
                 type = StrokeType.thick;
             }
             else if (e.Button == EnumMouseButton.Middle)
             {
-                //mode = ToolMode.Hook;
                 type = StrokeType.hook;
             }
 
@@ -129,7 +126,10 @@ namespace CuneiformWriting.Gui
                 return;   // ignore clicks outside
             }
 
-            strokeStart = new Vec2f(e.X, e.Y);
+            float localX = (e.X - (float)tabletBounds.absX) / (float)tabletBounds.OuterWidth;
+            float localY = (e.Y - (float)tabletBounds.absY) / (float)tabletBounds.OuterHeight;
+
+            strokeStart = new Vec2f(localX, localY);
             isDragging = true;
             e.Handled = true;
         }
@@ -140,27 +140,28 @@ namespace CuneiformWriting.Gui
 
             if (!IsInsideTablet(e.X, e.Y)) return;
 
-            Vec2f current = new Vec2f(e.X, e.Y);
+            float localX = (e.X - (float)tabletBounds.absX) / (float)tabletBounds.OuterWidth;
+            float localY = (e.Y - (float)tabletBounds.absY) / (float)tabletBounds.OuterHeight;
+
+            Vec2f current = new Vec2f(localX, localY);
             Vec2f delta = current - strokeStart;
 
             float length = 0f;
-            //float thickness =
-            //    mode == ToolMode.Thick ? 32f : 16f;
 
             if (type == StrokeType.hook)
             {
-                length = delta.X;
+                length = delta.X * 2f;
             }
             else
             {
                 length = delta.Length() * 2f;
             }
-                   // your fix
-            if (length < 2f) return;
+            //       your fix
+            //if (length < 2f) return;
 
             float angle = (float)Math.Atan2(delta.Y, delta.X);
 
-            currentLength = length;
+            currentLength = length * (float)tabletBounds.OuterWidth;
             currentAngle = angle;
 
             // dispose previous ghost
@@ -213,14 +214,17 @@ namespace CuneiformWriting.Gui
                 var s = strokes[i];
                 var mr = strokeMeshes[i];
 
+                float screenX = (float)tabletBounds.absX + s.x * (float)tabletBounds.OuterWidth;
+                float screenY = (float)tabletBounds.absY + s.y * (float)tabletBounds.OuterHeight;
+
                 if (s.typeofstroke == StrokeType.hook)
                 {
                     capi.Render.Render2DTexture(
                         mr,
                         hookTexture.TextureId,
 
-                        s.x,
-                        s.y,
+                        screenX,
+                        screenY,
 
                         1f,
                         1f,
@@ -234,8 +238,8 @@ namespace CuneiformWriting.Gui
                         mr,
                         strokeTexture.TextureId,
 
-                        s.x,
-                        s.y,
+                        screenX,
+                        screenY,
 
                         1f,
                         1f,
@@ -255,8 +259,8 @@ namespace CuneiformWriting.Gui
                         ghostMesh,
                         hookTexture.TextureId,
 
-                        strokeStart.X,
-                        strokeStart.Y,
+                        (float)tabletBounds.absX + strokeStart.X * (float)tabletBounds.OuterWidth,
+                        (float)tabletBounds.absY + strokeStart.Y * (float)tabletBounds.OuterHeight,
 
                         1f,
                         1f,
@@ -270,8 +274,8 @@ namespace CuneiformWriting.Gui
                         ghostMesh,
                         strokeTexture.TextureId,
 
-                        strokeStart.X,
-                        strokeStart.Y,
+                        (float)tabletBounds.absX + strokeStart.X * (float)tabletBounds.OuterWidth,
+                        (float)tabletBounds.absY + strokeStart.Y * (float)tabletBounds.OuterHeight,
 
                         1f,
                         1f,
