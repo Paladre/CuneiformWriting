@@ -1,4 +1,5 @@
-﻿using CuneiformWriting.Items;
+﻿using CuneiformWriting.Blocks;
+using CuneiformWriting.Items;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
@@ -8,37 +9,50 @@ namespace CuneiformWriting
 {
     public class CuneiformWritingModSystem : ModSystem
     {
+        ICoreServerAPI sapi;
 
         // Called on server and client
         // Useful for registering block/entity classes on both sides
         public override void Start(ICoreAPI api)
         {
-            api.RegisterItemClass("claytablet", typeof(claytablet));
+            base.Start(api);
+
+            api.RegisterBlockClass("cuneiformwriting.claytablet", typeof(BlockClayTablet));
+            api.RegisterBlockEntityClass("cuneiformwriting.claytabletentity", typeof(BlockEntityClayTablet));
+            api.RegisterItemClass("cuneiformwriting.stylus", typeof(stylus));
             api.Network.RegisterChannel("cuneiform")
                 .RegisterMessageType<PacketSaveTablet>();
         }
 
         public override void StartServerSide(ICoreServerAPI api)
         {
-            Mod.Logger.Notification("Hello from template mod server side: " + Lang.Get("cuneiformwriting:hello"));
+            this.sapi = api;
+
             api.Network.GetChannel("cuneiform")
                 .SetMessageHandler<PacketSaveTablet>(OnSaveFromClient);
         }
 
-        public override void StartClientSide(ICoreClientAPI api)
+        public override void StartClientSide(ICoreClientAPI capi)
         {
-            Mod.Logger.Notification("Hello from template mod client side: " + Lang.Get("cuneiformwriting:hello"));
+            
         }
 
-        private void OnSaveFromClient(IServerPlayer player, PacketSaveTablet msg)
+        void OnSaveFromClient(IServerPlayer fromPlayer, PacketSaveTablet packet)
         {
-            var slot = player.InventoryManager.ActiveHotbarSlot;
+            BlockEntity be = sapi.World.BlockAccessor
+                .GetBlockEntity(packet.Pos);
 
-            if (slot == null) return;
+            if (be is BlockEntityClayTablet tablet)
+            {
+                sapi.Event.EnqueueMainThreadTask(() =>
+                {
+                    tablet.ApplySerialized(packet.Data);
 
-            slot.Itemstack.Attributes.SetBytes("cuneiform", msg.Data);
+                    tablet.MarkDirty(true);
+                    tablet.MarkDirtyAndRebuild();
 
-            slot.MarkDirty();
+                }, "tablet-save");
+            }
         }
 
     }

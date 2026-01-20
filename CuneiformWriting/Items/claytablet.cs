@@ -1,162 +1,147 @@
 ﻿
 
-using CuneiformWriting.Gui;
-using System.Collections.Generic;
-using Vintagestory.API.Client;
-using Vintagestory.API.Common;
-using Vintagestory.API.Datastructures;
+//using Cairo.Freetype;
+//using CuneiformWriting.Gui;
+//using System.Collections.Generic;
+//using System.IO;
+//using Vintagestory.API.Client;
+//using Vintagestory.API.Common;
+//using Vintagestory.API.Datastructures;
+//using Vintagestory.API.MathTools;
 
-namespace CuneiformWriting.Items
-{
-    public class claytablet : Item
-    {
-        public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handHandling)
-        {
-            if (byEntity.World.Side == EnumAppSide.Client)
-            {
-                ICoreClientAPI capi = byEntity.World.Api as ICoreClientAPI;
+//namespace CuneiformWriting.Items
+//{
+//    public class claytablet : Item
+//    {
+//        public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handHandling)
+//        {
+//            if (byEntity.World.Side == EnumAppSide.Client)
+//            {
+//                ICoreClientAPI capi = byEntity.World.Api as ICoreClientAPI;
 
-                new GuiCuneiform(capi, slot, this).TryOpen();
+//                new GuiCuneiform(capi, slot, this).TryOpen();
 
-                handHandling = EnumHandHandling.PreventDefault;
-                api.Logger.Notification(
-                    "OPEN -> slot hash:" + slot.Itemstack?.GetHashCode()
-                );
-            }
-        }
+//                handHandling = EnumHandHandling.PreventDefault;
+//                var png = slot.Itemstack.Attributes.GetBytes("bakedtex");
+//                api.Logger.Notification("OPEN: baked exists=" + (png != null));
+//            }
+//        }
 
-        //public void SaveStrokes(ItemSlot slot, List<CuneiformStroke> strokes)
-        //{
-        //    ItemStack stack = slot.Itemstack;
-        //    TreeAttribute tree = new TreeAttribute();
+//        public List<CuneiformStroke> LoadStrokes(ItemSlot slot)
+//        {
+//            List<CuneiformStroke> result = new List<CuneiformStroke>();
 
-        //    tree.SetInt("count", strokes.Count);
+//            if (slot?.Itemstack == null)
+//            {
+//                return result;
+//            }
 
-        //    for (int i = 0; i < strokes.Count; i++)
-        //    {
-        //        var s = strokes[i];
+//            var stack = slot.Itemstack;
 
-        //        tree.SetFloat("x" + i, s.x);
-        //        tree.SetFloat("y" + i, s.y);
-        //        tree.SetFloat("l" + i, s.length);
-        //        tree.SetFloat("a" + i, s.angle);
-        //        tree.SetInt("t" + i, (int)s.typeofstroke);
-        //    }
+//            // ------------------------------------------------------------
+//            // 1) Check if any saved data exists
+//            // ------------------------------------------------------------
+//            if (stack.Attributes == null ||
+//                !stack.Attributes.HasAttribute("cuneiform"))
+//            {
+//                return result;   // brand new tablet
+//            }
 
-        //    stack.Attributes["cuneiform"] = tree;
+//            // ------------------------------------------------------------
+//            // 2) Get raw bytes safely
+//            // ------------------------------------------------------------
+//            byte[] bytes = stack.Attributes.GetBytes("cuneiform");
 
-        //    slot.MarkDirty();
+//            if (bytes == null || bytes.Length == 0)
+//            {
+//                return result;
+//            }
 
-        //    slot.Inventory?.DidModifyItemSlot(slot);
+//            // ------------------------------------------------------------
+//            // 3) Deserialize with protection against corruption
+//            // ------------------------------------------------------------
+//            TreeAttribute tree;
 
-        //    api.Logger.Notification(
-        //        "SAVE -> slot id: " + slot.Inventory?.InventoryID +
-        //        " hash:" + slot.Itemstack?.GetHashCode()
-        //    );
-        //}
+//            try
+//            {
+//                tree = TreeAttribute.CreateFromBytes(bytes);
+//            }
+//            catch
+//            {
+//                // Corrupted or old-format data → start fresh
+//                return result;
+//            }
 
-        //public List<CuneiformStroke> LoadStrokes(ItemSlot slot)
-        //{
-        //    //ItemStack stack = slot.Itemstack;
-        //    var result = new List<CuneiformStroke>();
+//            // ------------------------------------------------------------
+//            // 4) Read strokes
+//            // ------------------------------------------------------------
+//            int count = tree.GetInt("count");
 
-        //    //if (!stack.Attributes.HasAttribute("cuneiform"))
-        //    //    return result;
+//            for (int i = 0; i < count; i++)
+//            {
+//                CuneiformStroke s = new CuneiformStroke();
 
-        //    //var tree = stack.Attributes["cuneiform"] as TreeAttribute;
+//                s.x = tree.GetFloat("x" + i);
+//                s.y = tree.GetFloat("y" + i);
+//                s.length = tree.GetFloat("l" + i);
+//                s.angle = tree.GetFloat("a" + i);
 
-        //    var stack = slot.Itemstack;
+//                // Default to wedge if field missing (old tablets)
+//                s.typeofstroke = (StrokeType)
+//                    tree.GetInt("t" + i, (int)StrokeType.thick);
 
-        //    byte[] bytes = stack.Attributes.GetBytes("cuneiform");
+//                result.Add(s);
+//            }
 
-        //    if (bytes != null || bytes.Length == 0) return new List<CuneiformStroke>();
+//            return result;
+//        }
 
-        //    TreeAttribute tree = TreeAttribute.CreateFromBytes(bytes);
+//        //public override void OnBeforeRender(
+//        //    ICoreClientAPI capi,
+//        //    ItemStack itemstack,
+//        //    EnumItemRenderTarget target,
+//        //    ref ItemRenderInfo renderinfo)
+//        //{
+//        //    byte[] pngData = itemstack.Attributes.GetBytes("bakedtex");
 
-        //    int count = tree.GetInt("count");
+//        //    if (pngData == null) return;
 
-        //    for (int i = 0; i < count; i++)
-        //    {
-        //        result.Add(new CuneiformStroke
-        //        {
-        //            x = tree.GetFloat("x" + i),
-        //            y = tree.GetFloat("y" + i),
-        //            length = tree.GetFloat("l" + i),
-        //            angle = tree.GetFloat("a" + i),
-        //            typeofstroke = (StrokeType)tree.GetInt("t" + i)
-        //        });
-        //    }
+//        //    IBitmap bmp = capi.Render.BitmapCreateFromPng(pngData);
 
-        //    return result;
-        //}
+//        //    LoadedTexture tex = new LoadedTexture(capi);
+//        //    capi.Render.LoadTexture(bmp, ref tex);
 
-        public List<CuneiformStroke> LoadStrokes(ItemSlot slot)
-        {
-            List<CuneiformStroke> result = new List<CuneiformStroke>();
+//        //    // 🔥 IMPORTANT: apply to mesh material
+//        //    renderinfo.TextureId = tex.TextureId;
+//        //    renderinfo.NormalShaded = false;
+//        //}
 
-            if (slot?.Itemstack == null)
-            {
-                return result;
-            }
+//        public override void OnHeldRenderOrtho(ItemSlot inSlot, IClientPlayer byPlayer)
+//        {
+//            base.OnHeldRenderOrtho(inSlot, byPlayer);
 
-            var stack = slot.Itemstack;
+//            byte[] png = inSlot.Itemstack.Attributes.GetBytes("bakedtex");
+//            if (png == null) return;
 
-            // ------------------------------------------------------------
-            // 1) Check if any saved data exists
-            // ------------------------------------------------------------
-            if (stack.Attributes == null ||
-                !stack.Attributes.HasAttribute("cuneiform"))
-            {
-                return result;   // brand new tablet
-            }
+//            ICoreClientAPI capi = byPlayer.Entity.Api as ICoreClientAPI;
 
-            // ------------------------------------------------------------
-            // 2) Get raw bytes safely
-            // ------------------------------------------------------------
-            byte[] bytes = stack.Attributes.GetBytes("cuneiform");
+//            IBitmap bmp = capi.Render.BitmapCreateFromPng(png);
 
-            if (bytes == null || bytes.Length == 0)
-            {
-                return result;
-            }
+//            LoadedTexture tex = new LoadedTexture(capi);
+//            capi.Render.LoadTexture(bmp, ref tex);
 
-            // ------------------------------------------------------------
-            // 3) Deserialize with protection against corruption
-            // ------------------------------------------------------------
-            TreeAttribute tree;
+//            capi.Render.GlToggleBlend(true, EnumBlendMode.Standard);
 
-            try
-            {
-                tree = TreeAttribute.CreateFromBytes(bytes);
-            }
-            catch
-            {
-                // Corrupted or old-format data → start fresh
-                return result;
-            }
+//            capi.Render.Render2DTexture(
+//                tex.TextureId,
+//                capi.Render.FrameWidth * 0.45f,
+//                capi.Render.FrameHeight * 0.45f,
+//                capi.Render.FrameWidth * 0.1f,
+//                capi.Render.FrameHeight * 0.1f,
+//                0.02f
+//            );
 
-            // ------------------------------------------------------------
-            // 4) Read strokes
-            // ------------------------------------------------------------
-            int count = tree.GetInt("count");
-
-            for (int i = 0; i < count; i++)
-            {
-                CuneiformStroke s = new CuneiformStroke();
-
-                s.x = tree.GetFloat("x" + i);
-                s.y = tree.GetFloat("y" + i);
-                s.length = tree.GetFloat("l" + i);
-                s.angle = tree.GetFloat("a" + i);
-
-                // Default to wedge if field missing (old tablets)
-                s.typeofstroke = (StrokeType)
-                    tree.GetInt("t" + i, (int)StrokeType.thick);
-
-                result.Add(s);
-            }
-
-            return result;
-        }
-    }
-}
+//            capi.Render.GlToggleBlend(false);
+//        }
+//    }
+//}

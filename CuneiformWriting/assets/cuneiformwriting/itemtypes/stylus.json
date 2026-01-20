@@ -1,0 +1,14 @@
+{
+  "code": "stylus",
+  "class": "cuneiformwriting.stylus",
+  "storageFlags": 1,
+  "creativeinventory": {
+    "general": [ "*" ]
+  },
+  "texture": {
+    "base": "item/redclay"
+  },
+  "shape": {
+    "base": "item/stylus"
+  }
+}

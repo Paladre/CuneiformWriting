@@ -1,4 +1,5 @@
 ﻿using Cairo;
+using CuneiformWriting.Blocks;
 using CuneiformWriting.Items;
 using Newtonsoft.Json;
 using System;
@@ -21,8 +22,7 @@ namespace CuneiformWriting.Gui
     public class GuiCuneiform : GuiDialog
     {
         ICoreClientAPI capi;
-        ItemSlot sourceSlot;
-        claytablet tabletItem;
+        BlockEntityClayTablet targetBe;
 
         LoadedTexture strokeTexture;
         LoadedTexture hookTexture;
@@ -40,11 +40,10 @@ namespace CuneiformWriting.Gui
 
         StrokeType type = StrokeType.thick;
 
-        public GuiCuneiform(ICoreClientAPI capi, ItemSlot sourceSlot, claytablet tabletItem) : base(capi)
+        public GuiCuneiform(ICoreClientAPI capi, BlockEntityClayTablet be) : base(capi)
         {
             this.capi = capi;
-            this.sourceSlot = sourceSlot;
-            this.tabletItem = tabletItem;
+            this.targetBe = be;
             strokeTexture = new LoadedTexture(capi);
             capi.Render.GetOrLoadTexture(
                 new AssetLocation("cuneiformwriting:textures/gui/stroke.png"),
@@ -85,20 +84,30 @@ namespace CuneiformWriting.Gui
 
             SingleComposer = capi.Gui.CreateCompo("cuneiform", rootBounds)
                 .AddInteractiveElement(drawElement)
+                .AddButton(
+                    "Save & Close",
+                    OnSavePressed,
+                    ElementBounds.Fixed(
+                        tabletBounds.fixedX + tabletBounds.fixedWidth - 120,
+                        tabletBounds.fixedY + tabletBounds.fixedHeight + 10,
+                        120,
+                        30
+                    )
+                )
                 .Compose();
 
-            //capi.ShowChatMessage("GUI with custom draw opened");
-            strokes = tabletItem.LoadStrokes(sourceSlot);
+            strokes = new List<CuneiformStroke>(targetBe.strokes);
             RebuildMeshesFromStrokes();
         }
 
         public override void OnGuiClosed()
         {
-            //tabletItem.SaveStrokes(sourceSlot, strokes);
-            SendSaveToServer();
-
-            foreach (var mesh in strokeMeshes)
-                mesh.Dispose();
+            //capi.Network.GetChannel("cuneiform")
+            //    .SendPacket(new PacketSaveTablet
+            //    {
+            //        Pos = targetBe.Pos,
+            //        Data = new byte[1]   // TEMP
+            //    });
 
             base.OnGuiClosed();
         }
@@ -444,16 +453,22 @@ namespace CuneiformWriting.Gui
             strokeMeshes.RemoveAt(strokeMeshes.Count - 1);
 
             //tabletItem.SaveStrokes(sourceSlot, strokes);
-            SendSaveToServer();
+            targetBe.strokes = new List<CuneiformStroke>(strokes);
+            targetBe.MarkDirtyAndRebuild();
         }
 
-        void SendSaveToServer()
+        bool OnSavePressed(GuiElementTextButton btn)
         {
-            byte[] data = SerializeStrokes();
-            int index = sourceSlot.Inventory.GetSlotId(sourceSlot);
-
             capi.Network.GetChannel("cuneiform")
-                .SendPacket(new PacketSaveTablet { Data = data });
+                .SendPacket(new PacketSaveTablet
+                {
+                    Pos = targetBe.Pos,
+                    Data = SerializeStrokes()
+                });
+
+            TryClose();
+
+            return true;
         }
 
         byte[] SerializeStrokes()
