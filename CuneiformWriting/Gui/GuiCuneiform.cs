@@ -9,6 +9,7 @@ using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
+using Vintagestory.GameContent;
 
 namespace CuneiformWriting.Gui
 {
@@ -143,26 +144,38 @@ namespace CuneiformWriting.Gui
             float localX = (e.X - (float)tabletBounds.absX) / (float)tabletBounds.OuterWidth;
             float localY = (e.Y - (float)tabletBounds.absY) / (float)tabletBounds.OuterHeight;
 
+            float my = e.Y / capi.Settings.Float["guiScale"];
+            
+
             Vec2f current = new Vec2f(localX, localY);
             Vec2f delta = current - strokeStart;
+
+            float dx = delta.X * (float)tabletBounds.OuterWidth;
+            float dy = delta.Y * (float)tabletBounds.OuterHeight;
 
             float length = 0f;
 
             if (type == StrokeType.hook)
             {
-                length = delta.X * 2f;
+                length = dx * 4f;
             }
             else
             {
-                length = delta.Length() * 2f;
+                length = MathF.Sqrt(dx * dx + dy * dy) * 2f;
             }
+
+
+            if (type == StrokeType.hook && (!IsHookInside(strokeStart.Y, delta.X * 4f) || length < 0f)) return;
+
             //       your fix
             //if (length < 2f) return;
 
-            float angle = (float)Math.Atan2(delta.Y, delta.X);
+            float angle = (float)Math.Atan2(dy, dx);
 
-            currentLength = length * (float)tabletBounds.OuterWidth;
+            currentLength = length;
             currentAngle = angle;
+
+            
 
             // dispose previous ghost
             ghostMesh?.Dispose();
@@ -421,10 +434,16 @@ namespace CuneiformWriting.Gui
 
         bool IsInsideTablet(float x, float y)
         {
-            return x >= tabletBounds.absX &&
-                   x <= tabletBounds.absX + tabletBounds.OuterWidth &&
-                   y >= tabletBounds.absY &&
-                   y <= tabletBounds.absY + tabletBounds.OuterHeight;
+            return x >= (float)tabletBounds.absX &&
+                   x <= (float)tabletBounds.absX + (float)tabletBounds.OuterWidth &&
+                   y >= (float)tabletBounds.absY &&
+                   y <= (float)tabletBounds.absY + (float)tabletBounds.OuterHeight;
+        }
+
+        bool IsHookInside(float y, float length)
+        {
+            return y + length / 4f <= 1f &&
+                y - length / 4f >= 0f;
         }
 
         public override void OnKeyDown(KeyEvent args)
@@ -484,4 +503,5 @@ namespace CuneiformWriting.Gui
 
         
     }
+
 }
