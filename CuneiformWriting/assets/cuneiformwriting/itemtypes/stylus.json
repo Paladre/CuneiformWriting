@@ -1,0 +1,23 @@
+{
+  "code": "stylus",
+  "storageflags": 257,
+  "variantgroups": [
+    {
+      "code": "material",
+      "states": [ "reed", "bone" ]
+    }
+  ],
+  "creativeinventory": {
+    "general": [ "*" ],
+    "decorative": [ "*" ]
+  },
+  "textures": {
+    "all": { "base": "game:block/clay/redclay" }
+  },
+  "shape": {
+    "base": "item/stylus"
+  },
+  "attributes": {
+    "isCuneiformStylus": true
+  }
+}

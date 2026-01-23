@@ -24,7 +24,9 @@ namespace CuneiformWriting.Items
         {
             base.OnHeldInteractStart(slot, byEntity, blockSel, entitySel, firstEvent, ref handHandling);
 
-            if (Attributes?["isEditable"]?.AsBool(false) == true && !byEntity.Controls.ShiftKey)
+            ItemSlot leftSlot = byEntity.LeftHandItemSlot;
+
+            if (isEditable(slot, leftSlot) && !byEntity.Controls.ShiftKey)
             {
                 if (byEntity.World.Side == EnumAppSide.Client)
                 {
@@ -116,8 +118,8 @@ namespace CuneiformWriting.Items
             {
                 MeshData quad = QuadMeshUtil.GetQuad();
 
-                quad.Rotate(origin, GameMath.PIHALF, 0, GameMath.PIHALF);
-                quad.Scale(origin, 0.5f, 1f, 0.375f);
+                quad.Rotate(origin, GameMath.PIHALF, 0, 0);
+                quad.Scale(origin, 0.375f, 1f, 0.5f);
                 quad.Translate(new Vec3f(0.5f, 0.0626f, 0.5f));
 
                 quad.Flags = new int[quad.VerticesCount];
@@ -145,6 +147,11 @@ namespace CuneiformWriting.Items
 
                 capi.Render.UpdateMesh(cache.MeshRef, cache.MeshData);
             }
+        }
+
+        public static bool isEditable(ItemSlot slot, ItemSlot leftSlot)
+        {
+            return leftSlot.Itemstack?.Collectible.Attributes?.IsTrue("isCuneiformStylus") == true && slot.Itemstack?.Collectible.Attributes?.IsTrue("isClayTabletEditable") == true;
         }
 
 
@@ -319,6 +326,12 @@ namespace CuneiformWriting.Items
 
             int transparent = 0x00000000;
 
+            //int clay =
+            //    (255 << 24) |   // A
+            //    (210 << 16) |   // R
+            //    (180 << 8) |   // G
+            //    140;
+
             for (int i = 0; i < pixels.Length; i++)
             {
                 pixels[i] = transparent;
@@ -345,20 +358,59 @@ namespace CuneiformWriting.Items
             return pixels;
         }
 
-        //public override void DoSmelt(IWorldAccessor world, ISlotProvider cookingSlotsProvider, ItemSlot inputSlot, ItemSlot outputSlot)
+        //public MeshData GenMesh(ItemStack stack, ITextureAtlasAPI atlas, BlockPos? pos = null)
         //{
-        //    base.DoSmelt(world, cookingSlotsProvider, inputSlot, outputSlot);
 
-        //    world.Logger.Notification("[Cuneiform] DoSmelt called on " + Code);
-
-        //    if (outputSlot?.Itemstack == null || inputSlot?.Itemstack == null)
-        //    {
-        //        return;
-        //    }
-
-        //    outputSlot.Itemstack.Attributes = inputSlot.Itemstack.Attributes.Clone();
+        //    return mesh;
         //}
 
+        //void NormalizeTerrainMesh(MeshData mesh)
+        //{
+        //    int vc = mesh.VerticesCount;
 
+        //    if (mesh.Indices == null || mesh.Indices.Length == 0)
+        //        throw new Exception("Mesh missing indices");
+
+        //    if (mesh.Uv == null || mesh.Uv.Length == 0)
+        //        throw new Exception("Mesh missing UVs");
+
+        //    if (mesh.Rgba == null || mesh.Rgba.Length != vc * 4)
+        //    {
+        //        mesh.Rgba = new byte[vc * 4];
+        //        mesh.Rgba.Fill(byte.MaxValue);
+        //    }
+
+        //    if (mesh.Flags == null || mesh.Flags.Length != vc)
+        //        mesh.Flags = new int[vc];
+
+        //    if (mesh.TextureIndices == null || mesh.TextureIndices.Length != vc)
+        //        mesh.TextureIndices = new byte[vc];
+
+        //    if (mesh.RenderPasses == null || mesh.RenderPasses.Length == 0)
+        //        mesh.AddRenderPass(0);
+
+        //    if (mesh.VerticesPerFace == 0)
+        //        mesh.VerticesPerFace = 4;
+        //}
+
+        //public string GetMeshCacheKey(ItemStack stack)
+        //{
+        //    byte[] baked = stack.Attributes.GetBytes("bakedtex");
+
+        //    int hash = 0;
+
+        //    if (baked != null)
+        //    {
+        //        unchecked
+        //        {
+        //            for (int i = 0; i < baked.Length; i++)
+        //            {
+        //                hash = hash * 31 + baked[i];
+        //            }
+        //        }
+        //    }
+
+        //    return $"{stack.Collectible.Code}-{hash}";
+        //}
     }
 }

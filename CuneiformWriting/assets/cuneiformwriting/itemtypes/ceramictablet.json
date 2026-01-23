@@ -4,7 +4,10 @@
   "behaviors": [
     {
       "name": "GroundStorable",
-      "properties": { "layout": "SingleCenter", "placeRemoveSound": "game:sounds/block/ceramicplace" }
+      "properties": {
+        "layout": "SingleCenter",
+        "placeRemoveSound": "game:sounds/block/ceramicplace"
+      }
     }
   ],
   "variantgroups": [
@@ -32,14 +35,14 @@
   },
   "guiTransform": {
     "translation": {
-      "x": -12,
-      "y": -15,
+      "x": -8,
+      "y": -16,
       "z": 0
     },
     "rotation": {
-      "x": 92,
-      "y": 98,
-      "z": 12
+      "x": -82,
+      "y": -13,
+      "z": -17
     },
     "origin": {
       "x": 0,
@@ -50,13 +53,13 @@
   },
   "tpHandTransform": {
     "translation": {
-      "x": 0.2,
+      "x": -0.8,
       "y": -0.7,
-      "z": 0.1
+      "z": 0.2
     },
     "rotation": {
-      "x": 80,
-      "y": 0,
+      "x": 74,
+      "y": -90,
       "z": 0
     },
     "origin": {

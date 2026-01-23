@@ -49,6 +49,12 @@ namespace CuneiformWriting.Gui
             this.sourceSlot = sourceSlot;
             this.tabletItem = tabletItem;
 
+            string code = sourceSlot.Itemstack.Collectible.Code;
+            //capi.ShowChatMessage("code is : " + code);
+            string color = code.Split('-')[1];
+            //capi.ShowChatMessage("color is : " + color);
+            string bgpath = "game:textures/block/clay/" + color + "clay.png";
+
             strokeTexture = new LoadedTexture(capi);
             capi.Render.GetOrLoadTexture(
                 new AssetLocation("cuneiformwriting:textures/gui/stroke.png"),
@@ -61,7 +67,7 @@ namespace CuneiformWriting.Gui
             );
             tabletbg = new LoadedTexture(capi);
             capi.Render.GetOrLoadTexture(
-                new AssetLocation("cuneiformwriting:textures/gui/tablet_bg.png"),
+                new AssetLocation(bgpath),
                 ref tabletbg
             );
         }
@@ -342,7 +348,7 @@ namespace CuneiformWriting.Gui
             }
             else
             {
-                thickness = 24f;
+                thickness = 16f;
 
                 for (int i = 0; i < 4; i++)
                 {
