@@ -174,6 +174,8 @@ namespace CuneiformWriting.Gui
 
             float angle = (float)Math.Atan2(dy, dx);
 
+            strokeEnd = current;
+
             currentLength = length;
             currentAngle = angle;
 
@@ -195,10 +197,10 @@ namespace CuneiformWriting.Gui
         {
             if (!isDragging) return;
 
-            float localX = (e.X - (float)tabletBounds.absX) / (float)tabletBounds.OuterWidth;
-            float localY = (e.Y - (float)tabletBounds.absY) / (float)tabletBounds.OuterHeight;
+            //float localX = (e.X - (float)tabletBounds.absX) / (float)tabletBounds.OuterWidth;
+            //float localY = (e.Y - (float)tabletBounds.absY) / (float)tabletBounds.OuterHeight;
 
-            strokeEnd = new Vec2f(localX, localY);
+            //strokeEnd = new Vec2f(localX, localY);
 
             //if (ghostMesh != null)
             //{
