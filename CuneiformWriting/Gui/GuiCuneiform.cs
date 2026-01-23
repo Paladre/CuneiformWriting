@@ -1,16 +1,11 @@
 ﻿using Cairo;
 using CuneiformWriting.Items;
-using Newtonsoft.Json;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Reflection.Metadata;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
-using Vintagestory.GameContent;
-using System.Drawing;
 
 namespace CuneiformWriting.Gui
 {

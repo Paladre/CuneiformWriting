@@ -1,22 +1,25 @@
 ﻿using CuneiformWriting.Items;
+using HarmonyLib;
 using System.Collections.Generic;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
-using Vintagestory.API.Config;
 using Vintagestory.API.Server;
 
 namespace CuneiformWriting
 {
     public class CuneiformWritingModSystem : ModSystem
     {
+        Harmony harmony;
 
         // Called on server and client
         // Useful for registering block/entity classes on both sides
         public override void Start(ICoreAPI api)
         {
-            api.RegisterItemClass("claytablet", typeof(claytablet));
+            api.RegisterItemClass(Mod.Info.ModID + ".claytablet", typeof(claytablet));
             api.Network.RegisterChannel("cuneiform")
                 .RegisterMessageType<PacketSaveTablet>();
+            harmony = new Harmony(Mod.Info.ModID + ".pitkiln");
+            harmony.PatchAll();
         }
 
         public override void StartServerSide(ICoreServerAPI api)

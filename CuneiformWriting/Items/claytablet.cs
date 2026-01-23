@@ -1,52 +1,41 @@
 ﻿
 
-using Cairo;
 using CuneiformWriting.Gui;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.IO;
 using System.Linq;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Util;
+using Vintagestory.GameContent;
 using static CuneiformWriting.CuneiformWritingModSystem;
-using static System.Formats.Asn1.AsnWriter;
 
 namespace CuneiformWriting.Items
 {
-    public class claytablet : Item
+    public class claytablet : Item //, IContainedMeshSource
     {
-        
-        //List<CuneiformStroke> strokes = new List<CuneiformStroke>();
-
-
         float width = 0.005f;
-        //LoadedTexture bakedTexture;
 
-        //MeshRef quadMeshRef;
-        //MeshData quadMeshData;
-        //MultiTextureMeshRef modelRef;
-
-
-        //int lastStrokeHash = 0;
         Vec3f origin = new Vec3f(0,0,0);
-
 
         public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handHandling)
         {
-            if (byEntity.World.Side == EnumAppSide.Client)
+            base.OnHeldInteractStart(slot, byEntity, blockSel, entitySel, firstEvent, ref handHandling);
+
+            if (Attributes?["isEditable"]?.AsBool(false) == true && !byEntity.Controls.ShiftKey)
             {
-                ICoreClientAPI capi = byEntity.World.Api as ICoreClientAPI;
+                if (byEntity.World.Side == EnumAppSide.Client)
+                {
+                    ICoreClientAPI capi = byEntity.World.Api as ICoreClientAPI;
 
-                new GuiCuneiform(capi, slot, this).TryOpen();
+                    new GuiCuneiform(capi, slot, this).TryOpen();
 
-                handHandling = EnumHandHandling.PreventDefault;
+                    handHandling = EnumHandHandling.PreventDefault;
+                }
             }
+            
         }
 
         public override void OnBeforeRender(ICoreClientAPI capi, ItemStack itemstack, EnumItemRenderTarget target, ref ItemRenderInfo renderinfo)
@@ -72,7 +61,7 @@ namespace CuneiformWriting.Items
 
             int hash = data == null ? 0 : HashBytes(data);
 
-            capi.Logger.Notification($"[TabletRender] hash={hash} last={cache.LastHash}");
+            //capi.Logger.Notification($"[TabletRender] hash={hash} last={cache.LastHash}");
 
             // ---- rebake if changed
             if (hash != cache.LastHash)
@@ -355,6 +344,20 @@ namespace CuneiformWriting.Items
 
             return pixels;
         }
+
+        //public override void DoSmelt(IWorldAccessor world, ISlotProvider cookingSlotsProvider, ItemSlot inputSlot, ItemSlot outputSlot)
+        //{
+        //    base.DoSmelt(world, cookingSlotsProvider, inputSlot, outputSlot);
+
+        //    world.Logger.Notification("[Cuneiform] DoSmelt called on " + Code);
+
+        //    if (outputSlot?.Itemstack == null || inputSlot?.Itemstack == null)
+        //    {
+        //        return;
+        //    }
+
+        //    outputSlot.Itemstack.Attributes = inputSlot.Itemstack.Attributes.Clone();
+        //}
 
 
     }

@@ -75,4 +75,8 @@
   <PackageReference Include="System.Drawing.Common" Version="10.0.2" />
 </ItemGroup>
 
+<ItemGroup>
+  <Folder Include="assets\cuneiformwriting\textures\item\" />
+</ItemGroup>
+
 </Project>

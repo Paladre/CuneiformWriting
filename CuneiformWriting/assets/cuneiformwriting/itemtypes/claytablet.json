@@ -1,15 +1,130 @@
 {
   "code": "claytablet",
-  "class": "claytablet",
-  "storageFlags": 257,
+  "class": "cuneiformwriting.claytablet",
+  "variantgroups": [
+    {
+      "code": "color",
+      "states": [ "blue", "fire", "red" ]
+    },
+    {
+      "code": "state",
+      "states": [ "raw" ]
+    }
+  ],
   "creativeinventory": {
-    "general": [ "*" ]
+    "general": [ "*" ],
+    "decorative": [ "*" ]
   },
-  "texture": {
-    "base": "item/redclay"
+  "textures": {
+    "all": { "base": "game:block/clay/{color}clay" }
   },
   "shape": {
     "base": "item/claytablet"
+  },
+  "behaviors": [
+      { "name": "GroundStorable",
+        "properties": { "layout": "SingleCenter", "placeRemoveSound" : "game:sounds/effect/clayform" }
+      }
+  ],
+  "attributes": {
+    "isEditable": true
+  },
+  "combustiblePropsByType": {
+    "claytablet-fire-raw": {
+      "meltingPoint": 600,
+      "meltingDuration": 30,
+      "smeltedRatio": 1,
+      "smeltingType": "fire",
+      "requiresContainer": false,
+      "smeltedStack": {
+        "type": "item",
+        "code": "claytablet-fire-fired"
+      }
+    },
+    "claytablet-blue-raw": {
+      "meltingPoint": 600,
+      "meltingDuration": 30,
+      "smeltedRatio": 1,
+      "smeltingType": "fire",
+      "requiresContainer": false,
+      "smeltedStack": {
+        "type": "item",
+        "code": "claytablet-blue-fired"
+      }
+    },
+    "claytablet-red-raw": {
+      "meltingPoint": 600,
+      "meltingDuration": 30,
+      "smeltedRatio": 1,
+      "smeltingType": "fire",
+      "requiresContainer": false,
+      "smeltedStack": {
+        "type": "item",
+        "code": "claytablet-red-fired"
+      }
+    }
+  },
+  "attributesByType": {
+    "claytablet-red-raw": {
+      "beehivekiln": {
+        "0": {
+          "type": "item",
+          "code": "claytablet-tan-fired"
+        },
+        "1": {
+          "type": "item",
+          "code": "claytablet-orange-fired"
+        },
+        "2": {
+          "type": "item",
+          "code": "claytablet-red-fired"
+        },
+        "3": {
+          "type": "item",
+          "code": "claytablet-brown-fired"
+        }
+      }
+    },
+    "claytablet-blue-raw": {
+      "beehivekiln": {
+        "0": {
+          "type": "item",
+          "code": "claytablet-cream-fired"
+        },
+        "1": {
+          "type": "item",
+          "code": "claytablet-gray-fired"
+        },
+        "2": {
+          "type": "item",
+          "code": "claytablet-black-fired"
+        },
+        "3": {
+          "type": "item",
+          "code": "claytablet-black-fired"
+        }
+      }
+    },
+    "claytablet-fire-raw": {
+      "beehivekiln": {
+        "0": {
+          "type": "item",
+          "code": "claytablet-fire-fired"
+        },
+        "1": {
+          "type": "item",
+          "code": "claytablet-fire-fired"
+        },
+        "2": {
+          "type": "item",
+          "code": "claytablet-fire-fired"
+        },
+        "3": {
+          "type": "item",
+          "code": "claytablet-fire-fired"
+        }
+      }
+    }
   },
 
   "guiTransform": {
@@ -38,24 +153,6 @@
     },
     "rotation": {
       "x": 80,
-      "y": 0,
-      "z": 0
-    },
-    "origin": {
-      "x": 0,
-      "y": 0,
-      "z": 0
-    },
-    "scale": 0.45
-  },
-  "tpOffHandTransform": {
-    "translation": {
-      "x": 0.2,
-      "y": -0.7,
-      "z": -0.15
-    },
-    "rotation": {
-      "x": 100,
       "y": 0,
       "z": 0
     },
