@@ -22,18 +22,18 @@ namespace CuneiformWriting.Items
     public class claytablet : Item
     {
         
-        List<CuneiformStroke> strokes = new List<CuneiformStroke>();
+        //List<CuneiformStroke> strokes = new List<CuneiformStroke>();
 
 
-        float width = 0.01f;
-        LoadedTexture bakedTexture;
+        float width = 0.005f;
+        //LoadedTexture bakedTexture;
 
-        MeshRef quadMeshRef;
-        MeshData quadMeshData;
-        MultiTextureMeshRef modelRef;
+        //MeshRef quadMeshRef;
+        //MeshData quadMeshData;
+        //MultiTextureMeshRef modelRef;
 
 
-        int lastStrokeHash = 0;
+        //int lastStrokeHash = 0;
         Vec3f origin = new Vec3f(0,0,0);
 
 
@@ -48,81 +48,6 @@ namespace CuneiformWriting.Items
                 handHandling = EnumHandHandling.PreventDefault;
             }
         }
-
-        //public override void OnBeforeRender(ICoreClientAPI capi, ItemStack itemstack, EnumItemRenderTarget target, ref ItemRenderInfo renderinfo)
-        //{
-        //    base.OnBeforeRender(capi, itemstack, target, ref renderinfo);
-
-        //    EnsureQuad(capi);
-
-        //    int hash = GetStrokeHash(itemstack);
-
-        //    const int W = 1200;
-        //    const int H = 1600;
-
-        //    var temp = itemstack.TempAttributes;
-
-        //    LoadedTexture baked =
-        //        temp.GetAttribute("bakedtex") as LoadedTexture;
-
-        //    if (bakedTexture == null)
-        //    {
-        //        bakedTexture = new LoadedTexture(capi, 0, W, H);
-        //    }
-
-        //    if (hash != lastStrokeHash)
-        //    {
-        //        lastStrokeHash = hash;
-
-        //        int[] pixels = BakePixels(LoadStrokes(itemstack), W, H);
-
-        //        capi.Render.LoadOrUpdateTextureFromRgba(
-        //            pixels,
-        //            false,
-        //            0,
-        //            ref bakedTexture
-        //        );
-
-        //        //quadMeshData.TextureIndices = new byte[quadMeshData.VerticesCount / quadMeshData.VerticesPerFace];
-
-        //        quadMeshData.TextureIndices =
-        //        new byte[quadMeshData.VerticesCount / quadMeshData.VerticesPerFace];
-
-        //        for (int i = 0; i < quadMeshData.TextureIndices.Length; i++)
-        //        {
-        //            quadMeshData.TextureIndices[i] = 0;
-        //        }
-
-        //        quadMeshData.AddTextureId(bakedTexture.TextureId);
-
-        //        capi.Render.UpdateMesh(quadMeshRef, quadMeshData);
-
-        //        capi.Logger.Notification("Updated quad mesh with new texture id");
-        //    }
-
-        //    //if (modelRef == null || modelRef.meshrefs[0] != quadMeshRef)
-        //    //{
-        //    //    modelRef = new MultiTextureMeshRef(
-        //    //        new MeshRef[] { quadMeshRef },
-        //    //        new int[] { bakedTexture.TextureId }
-        //    //    );
-        //    //}
-
-        //    modelRef = new MultiTextureMeshRef(
-        //        new MeshRef[] { quadMeshRef },
-        //        new int[] { bakedTexture.TextureId }
-        //    );
-
-        //    renderinfo.ModelRef = modelRef;
-        //    renderinfo.NormalShaded = false;
-        //    renderinfo.CullFaces = true;
-
-        //    capi.Logger.Notification(
-        //        $"Uploaded tex id={bakedTexture.TextureId} size={bakedTexture.Width}x{bakedTexture.Height}"
-        //    );
-
-
-        //}
 
         public override void OnBeforeRender(ICoreClientAPI capi, ItemStack itemstack, EnumItemRenderTarget target, ref ItemRenderInfo renderinfo)
         {

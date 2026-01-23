@@ -103,7 +103,7 @@ namespace CuneiformWriting.Gui
 
             //capi.ShowChatMessage("GUI with custom draw opened");
             strokes = tabletItem.LoadStrokes(sourceSlot.Itemstack);
-            //RebuildMeshesFromStrokes();
+            RebuildMeshesFromStrokes();
         }
 
         public override void OnGuiClosed()
@@ -181,13 +181,13 @@ namespace CuneiformWriting.Gui
 
             ghostMesh?.Dispose();
 
-            //MeshData md = BuildStrokeMesh(
-            //    currentLength,
-            //    type,
-            //    currentAngle
-            //);
+            MeshData md = BuildStrokeMesh(
+                currentLength,
+                type,
+                currentAngle
+            );
 
-            //ghostMesh = capi.Render.UploadMesh(md);
+            ghostMesh = capi.Render.UploadMesh(md);
 
             e.Handled = true;
 
@@ -197,38 +197,22 @@ namespace CuneiformWriting.Gui
         {
             if (!isDragging) return;
 
-            //float localX = (e.X - (float)tabletBounds.absX) / (float)tabletBounds.OuterWidth;
-            //float localY = (e.Y - (float)tabletBounds.absY) / (float)tabletBounds.OuterHeight;
-
-            //strokeEnd = new Vec2f(localX, localY);
-
-            //if (ghostMesh != null)
-            //{
-            //    CuneiformStroke newStroke = new CuneiformStroke
-            //    {
-            //        x = strokeStart.X,
-            //        y = strokeStart.Y,
-            //        x2 = current.X,
-            //        y2 = strokeEnd.Y,
-            //        typeofstroke = type
-            //    };
-            //    undoStack.Push(newStroke);
-            //    strokes.Add(newStroke);
-
-            //    strokeMeshes.Add(ghostMesh);
-            //    ghostMesh = null;
-            //}
-
-            CuneiformStroke newStroke = new CuneiformStroke
+            if (ghostMesh != null)
             {
-                x1 = strokeStart.X,
-                y1 = strokeStart.Y,
-                x2 = strokeEnd.X,
-                y2 = strokeEnd.Y,
-                typeofstroke = type
-            };
-            undoStack.Push(newStroke);
-            strokes.Add(newStroke);
+                CuneiformStroke newStroke = new CuneiformStroke
+                {
+                    x1 = strokeStart.X,
+                    y1 = strokeStart.Y,
+                    x2 = strokeEnd.X,
+                    y2 = strokeEnd.Y,
+                    typeofstroke = type
+                };
+                undoStack.Push(newStroke);
+                strokes.Add(newStroke);
+
+                strokeMeshes.Add(ghostMesh);
+                ghostMesh = null;
+            }
 
 
             isDragging = false;
@@ -239,17 +223,232 @@ namespace CuneiformWriting.Gui
         {
             base.OnRenderGUI(deltaTime);
 
-            //tabletGraphic.Dispose();
+            capi.Render.Render2DTexture(
+                tabletbg.TextureId,
+                (float)tabletBounds.absX,
+                (float)tabletBounds.absY,
+                (float)tabletBounds.OuterWidth,
+                (float)tabletBounds.OuterHeight,
+                20f
+            );
 
-            //Vec2f start;
-            //Vec2f end;
+            for (int i = 0; i < strokes.Count; i++)
+            {
+                var s = strokes[i];
+                var mr = strokeMeshes[i];
 
-            //for (int i = 0; i < strokes.Count; i++)
-            //{
-            //    start = new Vec2f(strokes[i].x1, strokes[i].y1);
-            //    end = new Vec2f(strokes[i].x2, strokes[i].y2);
-            //    Vec2i[] indices = GetPolygonIndices(start, end, strokes[i].typeofstroke);
-            //}
+                float screenX = (float)tabletBounds.absX + s.x1 * (float)tabletBounds.OuterWidth;
+                float screenY = (float)tabletBounds.absY + s.y1 * (float)tabletBounds.OuterHeight;
+
+                if (s.typeofstroke == StrokeType.hook)
+                {
+                    capi.Render.Render2DTexture(
+                        mr,
+                        hookTexture.TextureId,
+
+                        screenX,
+                        screenY,
+
+                        1f,
+                        1f,
+
+                        50f
+                    );
+                }
+                else
+                {
+                    capi.Render.Render2DTexture(
+                        mr,
+                        strokeTexture.TextureId,
+
+                        screenX,
+                        screenY,
+
+                        1f,
+                        1f,
+
+                        50f
+                    );
+                }
+
+            }
+
+            // Ghost preview
+            if (ghostMesh != null)
+            {
+                if (type == StrokeType.hook)
+                {
+                    capi.Render.Render2DTexture(
+                        ghostMesh,
+                        hookTexture.TextureId,
+
+                        (float)tabletBounds.absX + strokeStart.X * (float)tabletBounds.OuterWidth,
+                        (float)tabletBounds.absY + strokeStart.Y * (float)tabletBounds.OuterHeight,
+
+                        1f,
+                        1f,
+
+                        60f
+                    );
+                }
+                else
+                {
+                    capi.Render.Render2DTexture(
+                        ghostMesh,
+                        strokeTexture.TextureId,
+
+                        (float)tabletBounds.absX + strokeStart.X * (float)tabletBounds.OuterWidth,
+                        (float)tabletBounds.absY + strokeStart.Y * (float)tabletBounds.OuterHeight,
+
+                        1f,
+                        1f,
+
+                        60f
+                    );
+                }
+
+            }
+        }
+
+        MeshData BuildStrokeMesh(float length, StrokeType typeofstroke, float angleRad)
+        {
+            MeshData mesh = new MeshData();
+
+            mesh.xyz = new float[12];
+            mesh.Uv = new float[8];
+            mesh.Indices = new int[6];
+            mesh.VerticesCount = 4;
+            mesh.IndicesCount = 6;
+            mesh.Flags = new int[4];
+
+            float cos = (float)Math.Cos(angleRad);
+            float sin = (float)Math.Sin(angleRad);
+            float thickness;
+
+            Vec2f[] baseVerts =
+            {
+                new Vec2f(0f, -0.5f),
+                new Vec2f(1f, -0.5f),
+                new Vec2f(1f,  0.5f),
+                new Vec2f(0f,  0.5f)
+            };
+
+            if (typeofstroke == StrokeType.hook)
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    float x = baseVerts[i].X * length;
+                    float y = baseVerts[i].Y * length;
+
+                    mesh.xyz[i * 3 + 0] = x;
+                    mesh.xyz[i * 3 + 1] = y;
+                    mesh.xyz[i * 3 + 2] = 0f;
+                }
+            }
+            else
+            {
+                thickness = 24f;
+
+                for (int i = 0; i < 4; i++)
+                {
+                    float x = baseVerts[i].X * length;
+                    float y = baseVerts[i].Y * thickness;
+
+                    float rx = x * cos - y * sin;
+                    float ry = x * sin + y * cos;
+
+                    mesh.xyz[i * 3 + 0] = rx;
+                    mesh.xyz[i * 3 + 1] = ry;
+                    mesh.xyz[i * 3 + 2] = 0f;
+                }
+
+            }
+
+            for (int i = 0; i < 4; i++)
+            {
+                mesh.Uv[i * 2 + 0] = (i == 1 || i == 2) ? 1f : 0f;
+                mesh.Uv[i * 2 + 1] = (i >= 2) ? 1f : 0f;
+            }
+
+            mesh.Indices[0] = 0;
+            mesh.Indices[1] = 1;
+            mesh.Indices[2] = 2;
+
+            mesh.Indices[3] = 0;
+            mesh.Indices[4] = 2;
+            mesh.Indices[5] = 3;
+
+            return mesh;
+        }
+
+        void RebuildMeshesFromStrokes()
+        {
+            capi.Logger.Notification("Starting rebuild of {0} strokes", strokes.Count);
+
+            int i = 0;
+
+            foreach (var s in strokes)
+            {
+                i++;
+
+                float length;
+
+                float dx = (s.x2 - s.x1) * (float)tabletBounds.OuterWidth;
+                float dy = (s.y2 - s.y1) * (float)tabletBounds.OuterHeight;
+
+                if (s.typeofstroke == StrokeType.hook)
+                {
+                    length = dx * 4f;
+                }
+                else
+                {
+                    length = MathF.Sqrt(dx * dx + dy * dy) * 2f;
+                }
+
+                float angle = (float)Math.Atan2(dy, dx);
+
+                // --- VALIDATE DATA FIRST ---
+                if (float.IsNaN(s.x1) || float.IsNaN(s.y1) ||
+                    float.IsNaN(s.x2) || float.IsNaN(s.y2))
+                {
+                    capi.Logger.Error("Stroke {0} contains NaN!", i);
+                    continue;
+                }
+
+                if (length <= 0 || length > 5000)
+                {
+                    capi.Logger.Error("Stroke {0} bad length {1}", i, length);
+                    continue;
+                }
+
+                capi.Logger.Notification("Building mesh {0}", i);
+
+                MeshData md;
+                try
+                {
+                    md = BuildStrokeMesh(
+                        length,
+                        s.typeofstroke,
+                        angle
+                    );
+                }
+                catch (Exception e)
+                {
+                    capi.Logger.Error("BuildStrokeMesh crashed: " + e);
+                    continue;
+                }
+
+                md.Flags = new int[4];
+
+
+                capi.Logger.Notification("Uploading mesh {0}", i);
+
+                MeshRef mr = capi.Render.UploadMesh(md);
+
+                strokeMeshes.Add(mr);
+            }
+
+            capi.Logger.Notification("Rebuild finished");
         }
 
         bool IsInsideTablet(float x, float y)
