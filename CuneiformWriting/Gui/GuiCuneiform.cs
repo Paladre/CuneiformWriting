@@ -10,15 +10,16 @@ using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
+using System.Drawing;
 
 namespace CuneiformWriting.Gui
 {
     public enum StrokeType
     {
-        thin,
-        thick,
+        stroke,
         hook
     }
+
     public class GuiCuneiform : GuiDialog
     {
         ICoreClientAPI capi;
@@ -27,25 +28,32 @@ namespace CuneiformWriting.Gui
 
         LoadedTexture strokeTexture;
         LoadedTexture hookTexture;
+        LoadedTexture tabletbg;
+
         List<MeshRef> strokeMeshes = new List<MeshRef>();
         MeshRef ghostMesh;
+
         ElementBounds tabletBounds;
 
         List<CuneiformStroke> strokes = new List<CuneiformStroke>();
         Stack<CuneiformStroke> undoStack = new Stack<CuneiformStroke>();
+
         Vec2f strokeStart;
+        Vec2f strokeEnd;
+
         bool isDragging = false;
 
         float currentLength;
         float currentAngle;
 
-        StrokeType type = StrokeType.thick;
+        StrokeType type = StrokeType.stroke;
 
         public GuiCuneiform(ICoreClientAPI capi, ItemSlot sourceSlot, claytablet tabletItem) : base(capi)
         {
             this.capi = capi;
             this.sourceSlot = sourceSlot;
             this.tabletItem = tabletItem;
+
             strokeTexture = new LoadedTexture(capi);
             capi.Render.GetOrLoadTexture(
                 new AssetLocation("cuneiformwriting:textures/gui/stroke.png"),
@@ -55,6 +63,11 @@ namespace CuneiformWriting.Gui
             capi.Render.GetOrLoadTexture(
                 new AssetLocation("cuneiformwriting:textures/gui/hook.png"),
                 ref hookTexture
+            );
+            tabletbg = new LoadedTexture(capi);
+            capi.Render.GetOrLoadTexture(
+                new AssetLocation("cuneiformwriting:textures/gui/tablet_bg.png"),
+                ref tabletbg
             );
         }
 
@@ -89,13 +102,12 @@ namespace CuneiformWriting.Gui
                 .Compose();
 
             //capi.ShowChatMessage("GUI with custom draw opened");
-            strokes = tabletItem.LoadStrokes(sourceSlot);
+            strokes = tabletItem.LoadStrokes(sourceSlot.Itemstack);
             RebuildMeshesFromStrokes();
         }
 
         public override void OnGuiClosed()
         {
-            //tabletItem.SaveStrokes(sourceSlot, strokes);
             SendSaveToServer();
 
             foreach (var mesh in strokeMeshes)
@@ -104,33 +116,30 @@ namespace CuneiformWriting.Gui
             base.OnGuiClosed();
         }
 
-        // Handle mouse down
         public override void OnMouseDown(MouseEvent e)
         {
             if (isDragging) return;
 
             if (e.Button == EnumMouseButton.Right)
             {
-                type = StrokeType.thin;
+                type = StrokeType.hook;
             }
             else if (e.Button == EnumMouseButton.Left)
             {
-                type = StrokeType.thick;
+                type = StrokeType.stroke;
             }
-            else if (e.Button == EnumMouseButton.Middle)
-            {
-                type = StrokeType.hook;
-            }
+            else return;
 
             if (!IsInsideTablet(e.X, e.Y))
             {
-                return;   // ignore clicks outside
+                return;
             }
 
             float localX = (e.X - (float)tabletBounds.absX) / (float)tabletBounds.OuterWidth;
             float localY = (e.Y - (float)tabletBounds.absY) / (float)tabletBounds.OuterHeight;
 
             strokeStart = new Vec2f(localX, localY);
+
             isDragging = true;
             e.Handled = true;
         }
@@ -143,9 +152,6 @@ namespace CuneiformWriting.Gui
 
             float localX = (e.X - (float)tabletBounds.absX) / (float)tabletBounds.OuterWidth;
             float localY = (e.Y - (float)tabletBounds.absY) / (float)tabletBounds.OuterHeight;
-
-            float my = e.Y / capi.Settings.Float["guiScale"];
-            
 
             Vec2f current = new Vec2f(localX, localY);
             Vec2f delta = current - strokeStart;
@@ -164,27 +170,20 @@ namespace CuneiformWriting.Gui
                 length = MathF.Sqrt(dx * dx + dy * dy) * 2f;
             }
 
-
-            if (type == StrokeType.hook && (!IsHookInside(strokeStart.Y, delta.X * 4f) || length < 0f)) return;
-
-            //       your fix
-            //if (length < 2f) return;
+            if (type == StrokeType.hook && (!IsHookInside(strokeStart.Y, delta.X * 4f) || dx * 4f < 0f)) return;
 
             float angle = (float)Math.Atan2(dy, dx);
 
             currentLength = length;
             currentAngle = angle;
 
-            
-
-            // dispose previous ghost
             ghostMesh?.Dispose();
 
-            MeshData md = BuildStrokeMesh(
-                currentLength,
-                type,
-                currentAngle
-            );
+            //MeshData md = BuildStrokeMesh(
+            //    currentLength,
+            //    type,
+            //    currentAngle
+            //);
 
             ghostMesh = capi.Render.UploadMesh(md);
 
@@ -194,25 +193,41 @@ namespace CuneiformWriting.Gui
 
         public override void OnMouseUp(MouseEvent e)
         {
-            //if (!isDragging || e.Button != EnumMouseButton.Left) return;
             if (!isDragging) return;
 
-            if (ghostMesh != null)
-            {
-                CuneiformStroke newStroke = new CuneiformStroke
-                {
-                    x = strokeStart.X,
-                    y = strokeStart.Y,
-                    length = currentLength,
-                    angle = currentAngle,
-                    typeofstroke = type
-                };
-                undoStack.Push(newStroke);
-                strokes.Add(newStroke);
+            //float localX = (e.X - (float)tabletBounds.absX) / (float)tabletBounds.OuterWidth;
+            //float localY = (e.Y - (float)tabletBounds.absY) / (float)tabletBounds.OuterHeight;
 
-                strokeMeshes.Add(ghostMesh);
-                ghostMesh = null;
-            }
+            //strokeEnd = new Vec2f(localX,  localY);
+
+            //if (ghostMesh != null)
+            //{
+            //    CuneiformStroke newStroke = new CuneiformStroke
+            //    {
+            //        x = strokeStart.X,
+            //        y = strokeStart.Y,
+            //        x2 = current.X,
+            //        y2 = strokeEnd.Y,
+            //        typeofstroke = type
+            //    };
+            //    undoStack.Push(newStroke);
+            //    strokes.Add(newStroke);
+
+            //    strokeMeshes.Add(ghostMesh);
+            //    ghostMesh = null;
+            //}
+
+            CuneiformStroke newStroke = new CuneiformStroke
+            {
+                x1 = strokeStart.X,
+                y1 = strokeStart.Y,
+                x2 = strokeEnd.X,
+                y2 = strokeEnd.Y,
+                typeofstroke = type
+            };
+            undoStack.Push(newStroke);
+            strokes.Add(newStroke);
+
 
             isDragging = false;
             e.Handled = true;
@@ -222,214 +237,17 @@ namespace CuneiformWriting.Gui
         {
             base.OnRenderGUI(deltaTime);
 
-            for (int i = 0; i < strokes.Count; i++)
-            {
-                var s = strokes[i];
-                var mr = strokeMeshes[i];
+            //tabletGraphic.Dispose();
 
-                float screenX = (float)tabletBounds.absX + s.x * (float)tabletBounds.OuterWidth;
-                float screenY = (float)tabletBounds.absY + s.y * (float)tabletBounds.OuterHeight;
+            //Vec2f start;
+            //Vec2f end;
 
-                if (s.typeofstroke == StrokeType.hook)
-                {
-                    capi.Render.Render2DTexture(
-                        mr,
-                        hookTexture.TextureId,
-
-                        screenX,
-                        screenY,
-
-                        1f,
-                        1f,
-
-                        50f
-                    );
-                }
-                else
-                {
-                    capi.Render.Render2DTexture(
-                        mr,
-                        strokeTexture.TextureId,
-
-                        screenX,
-                        screenY,
-
-                        1f,
-                        1f,
-
-                        50f
-                    );
-                }
-                    
-            }
-
-            // Ghost preview
-            if (ghostMesh != null)
-            {
-                if (type == StrokeType.hook)
-                {
-                    capi.Render.Render2DTexture(
-                        ghostMesh,
-                        hookTexture.TextureId,
-
-                        (float)tabletBounds.absX + strokeStart.X * (float)tabletBounds.OuterWidth,
-                        (float)tabletBounds.absY + strokeStart.Y * (float)tabletBounds.OuterHeight,
-
-                        1f,
-                        1f,
-
-                        60f
-                    );
-                }
-                else
-                {
-                    capi.Render.Render2DTexture(
-                        ghostMesh,
-                        strokeTexture.TextureId,
-
-                        (float)tabletBounds.absX + strokeStart.X * (float)tabletBounds.OuterWidth,
-                        (float)tabletBounds.absY + strokeStart.Y * (float)tabletBounds.OuterHeight,
-
-                        1f,
-                        1f,
-
-                        60f
-                    );
-                }
-                    
-            }
-        }
-
-        MeshData BuildStrokeMesh(float length, StrokeType typeofstroke, float angleRad)
-        {
-            MeshData mesh = new MeshData();
-
-            mesh.xyz = new float[12];
-            mesh.Uv = new float[8];
-            mesh.Indices = new int[6];
-            mesh.VerticesCount = 4;
-            mesh.IndicesCount = 6;
-            mesh.Flags = new int[4];
-
-            float cos = (float)Math.Cos(angleRad);
-            float sin = (float)Math.Sin(angleRad);
-            float thickness;
-
-            Vec2f[] baseVerts =
-            {
-                new Vec2f(0f, -0.5f),
-                new Vec2f(1f, -0.5f),
-                new Vec2f(1f,  0.5f),
-                new Vec2f(0f,  0.5f)
-            };
-
-            if (typeofstroke == StrokeType.hook)
-            {
-                for (int i = 0; i < 4; i++)
-                {
-                    float x = baseVerts[i].X * length;
-                    float y = baseVerts[i].Y * length;
-
-                    mesh.xyz[i * 3 + 0] = x;
-                    mesh.xyz[i * 3 + 1] = y;
-                    mesh.xyz[i * 3 + 2] = 0f;
-                }
-            }
-            else
-            {
-                if (typeofstroke == StrokeType.thin)
-                {
-                    thickness = 16f;
-                }
-                else
-                {
-                    thickness = 32f;
-                }
-
-                for (int i = 0; i < 4; i++)
-                {
-                    float x = baseVerts[i].X * length;
-                    float y = baseVerts[i].Y * thickness;
-
-                    float rx = x * cos - y * sin;
-                    float ry = x * sin + y * cos;
-
-                    mesh.xyz[i * 3 + 0] = rx;
-                    mesh.xyz[i * 3 + 1] = ry;
-                    mesh.xyz[i * 3 + 2] = 0f;
-                }
-
-            } 
-
-            for (int i = 0; i < 4; i++)
-            {
-                mesh.Uv[i * 2 + 0] = (i == 1 || i == 2) ? 1f : 0f;
-                mesh.Uv[i * 2 + 1] = (i >= 2) ? 1f : 0f;
-            }
-
-            mesh.Indices[0] = 0;
-            mesh.Indices[1] = 1;
-            mesh.Indices[2] = 2;
-
-            mesh.Indices[3] = 0;
-            mesh.Indices[4] = 2;
-            mesh.Indices[5] = 3;
-
-            return mesh;
-        }
-
-        void RebuildMeshesFromStrokes()
-        {
-            capi.Logger.Notification("Starting rebuild of {0} strokes", strokes.Count);
-
-            int i = 0;
-
-            foreach (var s in strokes)
-            {
-                i++;
-
-                // --- VALIDATE DATA FIRST ---
-                if (float.IsNaN(s.x) || float.IsNaN(s.y) ||
-                    float.IsNaN(s.length) || float.IsNaN(s.angle))
-                {
-                    capi.Logger.Error("Stroke {0} contains NaN!", i);
-                    continue;
-                }
-
-                if (s.length <= 0 || s.length > 5000)
-                {
-                    capi.Logger.Error("Stroke {0} bad length {1}", i, s.length);
-                    continue;
-                }
-
-                capi.Logger.Notification("Building mesh {0}", i);
-
-                MeshData md;
-                try
-                {
-                    md = BuildStrokeMesh(
-                        s.length,
-                        s.typeofstroke,
-                        s.angle
-                    );
-                }
-                catch (Exception e)
-                {
-                    capi.Logger.Error("BuildStrokeMesh crashed: " + e);
-                    continue;
-                }
-                
-                md.Flags = new int[4];  
-                
-
-                capi.Logger.Notification("Uploading mesh {0}", i);
-
-                MeshRef mr = capi.Render.UploadMesh(md);
-
-                strokeMeshes.Add(mr);
-            }
-
-            capi.Logger.Notification("Rebuild finished");
+            //for (int i = 0; i < strokes.Count; i++)
+            //{
+            //    start = new Vec2f(strokes[i].x1, strokes[i].y1);
+            //    end = new Vec2f(strokes[i].x2, strokes[i].y2);
+            //    Vec2i[] indices = GetPolygonIndices(start, end, strokes[i].typeofstroke);
+            //}
         }
 
         bool IsInsideTablet(float x, float y)
@@ -460,7 +278,6 @@ namespace CuneiformWriting.Gui
             if (strokes.Count == 0) return;
 
             strokes.RemoveAt(strokes.Count - 1);
-            strokeMeshes.RemoveAt(strokeMeshes.Count - 1);
 
             //tabletItem.SaveStrokes(sourceSlot, strokes);
             SendSaveToServer();
@@ -485,21 +302,25 @@ namespace CuneiformWriting.Gui
             {
                 var s = strokes[i];
 
-                tree.SetFloat("x" + i, s.x);
-                tree.SetFloat("y" + i, s.y);
-                tree.SetFloat("l" + i, s.length);
-                tree.SetFloat("a" + i, s.angle);
+                tree.SetFloat("x1" + i, s.x1);
+                tree.SetFloat("y1" + i, s.y1);
+                tree.SetFloat("x2" + i, s.x2);
+                tree.SetFloat("y2" + i, s.y2);
                 tree.SetInt("t" + i, (int)s.typeofstroke);
             }
 
             return tree.ToBytes();
         }
 
+        
+
         void OnDrawTablet(Context ctx, ImageSurface surface, ElementBounds bounds)
         {
             // Intentionally empty for now
             // Rendering will be done via Render2DTexture, not Cairo
         }
+
+        
 
         
     }
