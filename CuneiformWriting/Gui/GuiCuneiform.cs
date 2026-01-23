@@ -103,7 +103,7 @@ namespace CuneiformWriting.Gui
 
             //capi.ShowChatMessage("GUI with custom draw opened");
             strokes = tabletItem.LoadStrokes(sourceSlot.Itemstack);
-            RebuildMeshesFromStrokes();
+            //RebuildMeshesFromStrokes();
         }
 
         public override void OnGuiClosed()
@@ -185,7 +185,7 @@ namespace CuneiformWriting.Gui
             //    currentAngle
             //);
 
-            ghostMesh = capi.Render.UploadMesh(md);
+            //ghostMesh = capi.Render.UploadMesh(md);
 
             e.Handled = true;
 
@@ -195,10 +195,10 @@ namespace CuneiformWriting.Gui
         {
             if (!isDragging) return;
 
-            //float localX = (e.X - (float)tabletBounds.absX) / (float)tabletBounds.OuterWidth;
-            //float localY = (e.Y - (float)tabletBounds.absY) / (float)tabletBounds.OuterHeight;
+            float localX = (e.X - (float)tabletBounds.absX) / (float)tabletBounds.OuterWidth;
+            float localY = (e.Y - (float)tabletBounds.absY) / (float)tabletBounds.OuterHeight;
 
-            //strokeEnd = new Vec2f(localX,  localY);
+            strokeEnd = new Vec2f(localX, localY);
 
             //if (ghostMesh != null)
             //{
