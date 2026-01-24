@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
+using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Util;
@@ -19,6 +20,8 @@ namespace CuneiformWriting.Items
         float width = 0.005f;
 
         Vec3f origin = new Vec3f(0,0,0);
+
+        ICoreClientAPI capi;
 
         public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handHandling)
         {
@@ -40,114 +43,121 @@ namespace CuneiformWriting.Items
             
         }
 
-        public override void OnBeforeRender(ICoreClientAPI capi, ItemStack itemstack, EnumItemRenderTarget target, ref ItemRenderInfo renderinfo)
+        public override void OnLoaded(ICoreAPI api)
         {
-            base.OnBeforeRender(capi, itemstack, target, ref renderinfo);
+            base.OnLoaded(api);
 
-            // Only render baked version in world / hand
-            if (target == EnumItemRenderTarget.Gui) return;
-
-            var system = capi.ModLoader.GetModSystem<CuneiformWritingModSystem>();
-            var cacheDict = system.TabletCache;
-
-            int key = itemstack.GetHashCode();
-
-            if (!cacheDict.TryGetValue(key, out TabletRenderCache cache))
-            {
-                cache = new TabletRenderCache();
-                cacheDict[key] = cache;
-            }
-
-            // ---- get serialized strokes
-            byte[] data = itemstack.Attributes.GetBytes("cuneiform");
-
-            int hash = data == null ? 0 : HashBytes(data);
-
-            //capi.Logger.Notification($"[TabletRender] hash={hash} last={cache.LastHash}");
-
-            // ---- rebake if changed
-            if (hash != cache.LastHash)
-            {
-                cache.LastHash = hash;
-
-                RebuildBakedTexture(capi, itemstack, cache);
-            }
-
-            if (cache.ModelRef == null) return;
-
-            if (!cache.AttachedOverlay)
-            {
-                cache.ModelRef = new MultiTextureMeshRef(
-                    new[] { renderinfo.ModelRef.meshrefs[0], cache.MeshRef },
-                    new[] { renderinfo.ModelRef.textureids[0], cache.Texture.TextureId }
-                );
-
-                cache.AttachedOverlay = true;
-            }
-
-            renderinfo.ModelRef = cache.ModelRef;
-            capi.Render.BindTexture2d(cache.Texture.TextureId);
-            capi.Render.GlGenerateTex2DMipmaps();
-            renderinfo.NormalShaded = true;
-            renderinfo.CullFaces = true;
+            this.capi = api as ICoreClientAPI;
         }
 
-        void RebuildBakedTexture(ICoreClientAPI capi, ItemStack stack, TabletRenderCache cache)
-        {
-            // --- create new image pixels
-            int sizeX = 1200;
-            int sizeY = 1600;
+        //public override void OnBeforeRender(ICoreClientAPI capi, ItemStack itemstack, EnumItemRenderTarget target, ref ItemRenderInfo renderinfo)
+        //{
+        //    base.OnBeforeRender(capi, itemstack, target, ref renderinfo);
 
-            int[] rgba = BakePixels(stack, sizeX, sizeY);
+        //    // Only render baked version in world / hand
+        //    if (target == EnumItemRenderTarget.Gui) return;
 
-            // ---- upload or update texture
-            if (cache.Texture == null)
-            {
-                cache.Texture = new LoadedTexture(capi, 0, sizeX, sizeY);
-            }
+        //    var system = capi.ModLoader.GetModSystem<CuneiformWritingModSystem>();
+        //    var cacheDict = system.TabletCache;
 
-            capi.Render.LoadOrUpdateTextureFromRgba(
-                rgba,
-                false,
-                0,
-                ref cache.Texture
-            );
+        //    int key = itemstack.GetHashCode();
 
-            // ---- mesh
-            if (cache.MeshData == null)
-            {
-                MeshData quad = QuadMeshUtil.GetQuad();
+        //    if (!cacheDict.TryGetValue(key, out TabletRenderCache cache))
+        //    {
+        //        cache = new TabletRenderCache();
+        //        cacheDict[key] = cache;
+        //    }
 
-                quad.Rotate(origin, GameMath.PIHALF, 0, 0);
-                quad.Scale(origin, 0.375f, 1f, 0.5f);
-                quad.Translate(new Vec3f(0.5f, 0.0626f, 0.5f));
+        //    // ---- get serialized strokes
+        //    byte[] data = itemstack.Attributes.GetBytes("cuneiform");
 
-                quad.Flags = new int[quad.VerticesCount];
-                quad.Rgba = new byte[quad.VerticesCount * 4];
-                quad.Rgba.Fill(byte.MaxValue);
+        //    int hash = data == null ? 0 : HashBytes(data);
 
-                quad.TextureIndices =
-                    new byte[quad.VerticesCount / quad.VerticesPerFace];
+        //    //capi.Logger.Notification($"[TabletRender] hash={hash} last={cache.LastHash}");
 
-                quad.AddTextureId(cache.Texture.TextureId);
-                quad.AddRenderPass(0);
+        //    // ---- rebake if changed
+        //    if (hash != cache.LastHash)
+        //    {
+        //        cache.LastHash = hash;
 
-                cache.MeshData = quad;
-                cache.MeshRef = capi.Render.UploadMesh(quad);
+        //        RebuildBakedTexture(capi, itemstack, cache);
+        //    }
 
-                cache.ModelRef = new MultiTextureMeshRef(
-                    new[] { cache.MeshRef },
-                    new[] { cache.Texture.TextureId }
-                );
-            }
-            else
-            {
-                // Update texture id
-                cache.MeshData.TextureIds[0] = cache.Texture.TextureId;
+        //    if (cache.ModelRef == null) return;
 
-                capi.Render.UpdateMesh(cache.MeshRef, cache.MeshData);
-            }
-        }
+        //    if (!cache.AttachedOverlay)
+        //    {
+        //        cache.ModelRef = new MultiTextureMeshRef(
+        //            new[] { renderinfo.ModelRef.meshrefs[0], cache.MeshRef },
+        //            new[] { renderinfo.ModelRef.textureids[0], cache.Texture.TextureId }
+        //        );
+
+        //        cache.AttachedOverlay = true;
+        //    }
+
+        //    renderinfo.ModelRef = cache.ModelRef;
+        //    capi.Render.BindTexture2d(cache.Texture.TextureId);
+        //    capi.Render.GlGenerateTex2DMipmaps();
+        //    renderinfo.NormalShaded = true;
+        //    renderinfo.CullFaces = true;
+        //}
+
+        //void RebuildBakedTexture(ICoreClientAPI capi, ItemStack stack, TabletRenderCache cache)
+        //{
+        //    // --- create new image pixels
+        //    int sizeX = 1200;
+        //    int sizeY = 1600;
+
+        //    int[] rgba = BakePixels(stack, sizeX, sizeY);
+
+        //    // ---- upload or update texture
+        //    if (cache.Texture == null)
+        //    {
+        //        cache.Texture = new LoadedTexture(capi, 0, sizeX, sizeY);
+        //    }
+
+        //    capi.Render.LoadOrUpdateTextureFromRgba(
+        //        rgba,
+        //        false,
+        //        0,
+        //        ref cache.Texture
+        //    );
+
+        //    // ---- mesh
+        //    if (cache.MeshData == null)
+        //    {
+        //        MeshData quad = QuadMeshUtil.GetQuad();
+
+        //        quad.Rotate(origin, GameMath.PIHALF, 0, 0);
+        //        quad.Scale(origin, 0.375f, 1f, 0.5f);
+        //        quad.Translate(new Vec3f(0.5f, 0.0626f, 0.5f));
+
+        //        quad.Flags = new int[quad.VerticesCount];
+        //        quad.Rgba = new byte[quad.VerticesCount * 4];
+        //        quad.Rgba.Fill(byte.MaxValue);
+
+        //        quad.TextureIndices =
+        //            new byte[quad.VerticesCount / quad.VerticesPerFace];
+
+        //        quad.AddTextureId(cache.Texture.TextureId);
+        //        quad.AddRenderPass(0);
+
+        //        cache.MeshData = quad;
+        //        cache.MeshRef = capi.Render.UploadMesh(quad);
+
+        //        cache.ModelRef = new MultiTextureMeshRef(
+        //            new[] { cache.MeshRef },
+        //            new[] { cache.Texture.TextureId }
+        //        );
+        //    }
+        //    else
+        //    {
+        //        // Update texture id
+        //        cache.MeshData.TextureIds[0] = cache.Texture.TextureId;
+
+        //        capi.Render.UpdateMesh(cache.MeshRef, cache.MeshData);
+        //    }
+        //}
 
         public static bool isEditable(ItemSlot slot, ItemSlot leftSlot)
         {
@@ -358,59 +368,137 @@ namespace CuneiformWriting.Items
             return pixels;
         }
 
-        //public MeshData GenMesh(ItemStack stack, ITextureAtlasAPI atlas, BlockPos? pos = null)
+        //public MeshData GenMesh(ItemStack stack, ITextureAtlasAPI targetAtlas, BlockPos pos)
         //{
+        //    var capi = api as ICoreClientAPI;
+
+        //    ContainedTextureSource texSource =
+        //        new ContainedTextureSource(capi, targetAtlas,
+        //            new Dictionary<string, AssetLocation>(),
+        //            "Tablet render");
+
+        //    // ---- base tablet texture
+        //    var shape = capi.TesselatorManager.GetCachedShape(Shape.Base);
+
+        //    foreach (var tex in shape.Textures)
+        //        texSource.Textures[tex.Key] = tex.Value;
+
+        //    // ---- baked overlay?
+        //    byte[] baked = stack.Attributes.GetBytes("bakedtex");
+
+        //    if (baked != null)
+        //    {
+        //        int subId;
+        //        TextureAtlasPosition texpos;
+
+        //        if (targetAtlas.InsertTexture(baked, out subId, out texpos))
+        //        {
+        //            capi.BlockTextureAtlas.InsertTexture(baked, out subId, out texpos);
+        //        }
+        //    }
+
+        //    capi.Tesselator.TesselateItem(this, out MeshData mesh, texSource);
 
         //    return mesh;
         //}
 
-        //void NormalizeTerrainMesh(MeshData mesh)
-        //{
-        //    int vc = mesh.VerticesCount;
+        public MeshData GenMesh(ItemStack stack, ITextureAtlasAPI atlas, BlockPos pos)
+        {
+            var cnts = GenTextureSource(stack, atlas);
+            if (cnts == null) return new MeshData();
 
-        //    if (mesh.Indices == null || mesh.Indices.Length == 0)
-        //        throw new Exception("Mesh missing indices");
+            capi.Tesselator.TesselateItem(this, out MeshData mesh, cnts);
 
-        //    if (mesh.Uv == null || mesh.Uv.Length == 0)
-        //        throw new Exception("Mesh missing UVs");
+            return mesh;
+        }
 
-        //    if (mesh.Rgba == null || mesh.Rgba.Length != vc * 4)
-        //    {
-        //        mesh.Rgba = new byte[vc * 4];
-        //        mesh.Rgba.Fill(byte.MaxValue);
-        //    }
+        ContainedTextureSource GenTextureSource(ItemStack stack, ITextureAtlasAPI atlas)
+        {
+            var cnts = new ContainedTextureSource(
+                capi,
+                atlas,
+                new Dictionary<string, AssetLocation>(),
+                "tablet contained mesh"
+            );
 
-        //    if (mesh.Flags == null || mesh.Flags.Length != vc)
-        //        mesh.Flags = new int[vc];
+            cnts.Textures.Clear();
 
-        //    if (mesh.TextureIndices == null || mesh.TextureIndices.Length != vc)
-        //        mesh.TextureIndices = new byte[vc];
+            // --- copy textures from shape ---
+            var shape = capi.TesselatorManager.GetCachedShape(this.Shape.Base);
 
-        //    if (mesh.RenderPasses == null || mesh.RenderPasses.Length == 0)
-        //        mesh.AddRenderPass(0);
+            foreach (var t in shape.Textures)
+            {
+                cnts.Textures[t.Key] = t.Value.Clone();
+            }
 
-        //    if (mesh.VerticesPerFace == 0)
-        //        mesh.VerticesPerFace = 4;
-        //}
+            // --- override base with baked ---
+            if (stack.Attributes.HasAttribute("bakedpixels"))
+            {
+                int[] pixels = stack.Attributes.GetIntArray("bakedpixels");
+                int w = stack.Attributes.GetInt("bakedw");
+                int h = stack.Attributes.GetInt("bakedh");
 
-        //public string GetMeshCacheKey(ItemStack stack)
-        //{
-        //    byte[] baked = stack.Attributes.GetBytes("bakedtex");
+                if (pixels != null && pixels.Length == w * h)
+                {
+                    TextureAtlasPosition pos;
+                    int subId;
 
-        //    int hash = 0;
+                    bool ok = atlas.InsertTexture(pixels, out subId, out pos);
 
-        //    if (baked != null)
-        //    {
-        //        unchecked
-        //        {
-        //            for (int i = 0; i < baked.Length; i++)
-        //            {
-        //                hash = hash * 31 + baked[i];
-        //            }
-        //        }
-        //    }
+                    if (ok)
+                    {
+                        cnts.Textures["base"] = pos;
+                    }
+                }
+            }
 
-        //    return $"{stack.Collectible.Code}-{hash}";
-        //}
+            return cnts;
+        }
+
+        public string GetMeshCacheKey(ItemStack stack)
+        {
+            byte[] baked = stack.Attributes.GetBytes("bakedtex");
+
+            if (baked == null) return "tablet-empty";
+
+            int hash = GameMath.MurmurHash3(baked.Length, baked.Length / 2, baked[0]);
+
+            return "tablet-" + hash;
+        }
+
+        public void ApplySerialized(ItemSlot slot, byte[] data)
+        {
+            TreeAttribute tree = TreeAttribute.CreateFromBytes(data);
+
+            slot.Itemstack.Attributes["cuneiform"] = tree;
+
+            ReBake(slot);
+
+            slot.MarkDirty();
+        }
+
+        void ReBake(ItemSlot slot)
+        {
+            int[] pixels = BakePixels(slot.Itemstack, 1200, 1600);
+
+            byte[] rgba = new byte[pixels.Length * 4];
+
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                rgba[i * 4 + 0] = (byte)((pixels[i] >> 16) & 0xFF);
+                rgba[i * 4 + 1] = (byte)((pixels[i] >> 8) & 0xFF);
+                rgba[i * 4 + 2] = (byte)(pixels[i] & 0xFF);
+                rgba[i * 4 + 3] = (byte)((pixels[i] >> 24) & 0xFF);
+            }
+
+            slot.Itemstack.Attributes.SetBytes("bakedrgba", rgba);
+            slot.Itemstack.Attributes.SetInt("bakedw", 1200);
+            slot.Itemstack.Attributes.SetInt("bakedh", 1600);
+
+            // used by renderer cache
+            slot.Itemstack.Attributes.SetInt("bakedhash", GameMath.MurmurHash3(pixels.Length, 1200, 92821));
+        }
+
+
     }
 }

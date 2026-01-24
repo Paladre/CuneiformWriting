@@ -16,7 +16,7 @@
     "decorative": [ "*" ]
   },
   "textures": {
-    "all": { "base": "game:block/clay/{color}clay" }
+    "base": { "base": "game:block/clay/{color}clay" }
   },
   "shape": {
     "base": "item/claytablet"

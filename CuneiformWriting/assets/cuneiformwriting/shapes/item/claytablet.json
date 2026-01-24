@@ -8,6 +8,7 @@
 	"textureSizes": {
 	},
 	"textures": {
+		"base": "game:block/clay/{color}clay"
 	},
 	"elements": [
 		{
