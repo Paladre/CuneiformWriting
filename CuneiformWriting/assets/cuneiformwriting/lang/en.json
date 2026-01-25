@@ -1,3 +1,17 @@
 {
-    "hello": "hello world!"
+  "item-claytablet-blue-raw": "Blue clay tablet",
+  "item-claytablet-red-raw": "Red clay tablet",
+  "item-claytablet-fire-raw": "Fire clay tablet",
+  "item-claytablet-blue-fired": "Blue ceramic tablet",
+  "item-claytablet-fire-fired": "Fire ceramic tablet",
+  "item-claytablet-black-fired": "Black ceramic tablet",
+  "item-claytablet-brown-fired": "Brown ceramic tablet",
+  "item-claytablet-cream-fired": "Cream ceramic tablet",
+  "item-claytablet-gray-fired": "Gray ceramic tablet",
+  "item-claytablet-orange-fired": "Orange ceramic tablet",
+  "item-claytablet-red-fired": "Red ceramic tablet",
+  "item-claytablet-tan-fired": "Tan ceramic tablet",
+  "item-stylus-reed": "Reed stylus",
+  "item-stylus-bone": "Bone stylus"
+
 }

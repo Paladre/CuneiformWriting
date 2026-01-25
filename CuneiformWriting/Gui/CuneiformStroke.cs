@@ -6,6 +6,7 @@
         public float y1;
         public float x2;
         public float y2;
+        public float thicknessDelta;
 
         public StrokeType typeofstroke;
     }

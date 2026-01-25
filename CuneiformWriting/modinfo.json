@@ -4,11 +4,11 @@
     "modid": "cuneiformwriting",
     "name": "CuneiformWriting",
     "authors": [
-        "Keldroni"
+        "Elborshooter"
     ],
-    "description": "To be added",
+    "description": "Live your dreams of copper trading",
     "version": "1.0.0",
     "dependencies": {
-        "game": "1.21.0"
+        "game": "1.21.6"
     }
 }
