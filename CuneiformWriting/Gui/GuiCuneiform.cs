@@ -111,7 +111,7 @@ namespace CuneiformWriting.Gui
 
         public override void OnGuiClosed()
         {
-            SendSaveToServer();
+            //SendSaveToServer();
 
             foreach (var mesh in strokeMeshes)
                 mesh.Dispose();
@@ -145,7 +145,7 @@ namespace CuneiformWriting.Gui
 
                 strokeStart = new Vec2f(localX, localY);
 
-                thicknessDelta = 0.012f;
+                thicknessDelta = 0.015f;
 
                 isDrawing = true;
                 e.Handled = true;
@@ -169,6 +169,7 @@ namespace CuneiformWriting.Gui
                             typeofstroke = type
                         };
                         strokes.Add(newStroke);
+                        SendSaveToServer();
 
                         strokeMeshes.Add(ghostMesh);
                         ghostMesh = null;
@@ -242,12 +243,12 @@ namespace CuneiformWriting.Gui
             }
             if (args.delta > 0)
             {
-                thicknessDelta += 0.001f;
+                thicknessDelta += 0.002f;
             } else
             {
-                thicknessDelta -= 0.001f;
+                thicknessDelta -= 0.002f;
             }
-            thicknessDelta = GameMath.Clamp(thicknessDelta, 0f, 0.024f);
+            thicknessDelta = GameMath.Clamp(thicknessDelta, 0f, 0.030f);
 
             ghostMesh?.Dispose();
 
