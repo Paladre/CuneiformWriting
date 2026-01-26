@@ -31,7 +31,6 @@ namespace CuneiformWriting.Gui
         ElementBounds tabletBounds;
 
         List<CuneiformStroke> strokes = new List<CuneiformStroke>();
-        Stack<CuneiformStroke> undoStack = new Stack<CuneiformStroke>();
 
         Vec2f strokeStart;
         Vec2f strokeEnd;
@@ -169,7 +168,6 @@ namespace CuneiformWriting.Gui
                             thicknessDelta = thicknessDelta,
                             typeofstroke = type
                         };
-                        undoStack.Push(newStroke);
                         strokes.Add(newStroke);
 
                         strokeMeshes.Add(ghostMesh);
@@ -233,32 +231,6 @@ namespace CuneiformWriting.Gui
 
             e.Handled = true;
 
-        }
-
-        public override void OnMouseUp(MouseEvent e)
-        {
-            //if (!isDragging) return;
-
-            //if (ghostMesh != null)
-            //{
-            //    CuneiformStroke newStroke = new CuneiformStroke
-            //    {
-            //        x1 = strokeStart.X,
-            //        y1 = strokeStart.Y,
-            //        x2 = strokeEnd.X,
-            //        y2 = strokeEnd.Y,
-            //        typeofstroke = type
-            //    };
-            //    undoStack.Push(newStroke);
-            //    strokes.Add(newStroke);
-
-            //    strokeMeshes.Add(ghostMesh);
-            //    ghostMesh = null;
-            //}
-
-
-            //isDragging = false;
-            //e.Handled = true;
         }
 
         public override void OnMouseWheel(MouseWheelEventArgs args)
@@ -479,7 +451,6 @@ namespace CuneiformWriting.Gui
 
                 float angle = (float)Math.Atan2(dy, dx);
 
-                // --- VALIDATE DATA FIRST ---
                 if (float.IsNaN(s.x1) || float.IsNaN(s.y1) ||
                     float.IsNaN(s.x2) || float.IsNaN(s.y2))
                 {
@@ -538,25 +509,6 @@ namespace CuneiformWriting.Gui
                 y - length / 4f >= 0f;
         }
 
-        public override void OnKeyDown(KeyEvent args)
-        {
-            if (args.CtrlPressed && args.KeyCode == (int)GlKeys.Z)
-            {
-                UndoLast();
-                return;
-            }
-            return;
-        }
-        void UndoLast()
-        {
-            if (strokes.Count == 0) return;
-
-            strokes.RemoveAt(strokes.Count - 1);
-
-            //tabletItem.SaveStrokes(sourceSlot, strokes);
-            SendSaveToServer();
-        }
-
         void SendSaveToServer()
         {
             byte[] data = SerializeStrokes();
@@ -591,8 +543,7 @@ namespace CuneiformWriting.Gui
 
         void OnDrawTablet(Context ctx, ImageSurface surface, ElementBounds bounds)
         {
-            // Intentionally empty for now
-            // Rendering will be done via Render2DTexture, not Cairo
+
         }
 
         
