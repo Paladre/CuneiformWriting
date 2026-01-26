@@ -31,19 +31,19 @@ namespace CuneiformWriting.Items
         {
             base.OnHeldInteractStart(slot, byEntity, blockSel, entitySel, firstEvent, ref handHandling);
 
-            ItemSlot leftSlot = byEntity.LeftHandItemSlot;
+            //ItemSlot leftSlot = byEntity.LeftHandItemSlot;
 
-            if (isEditable(slot, leftSlot) && !byEntity.Controls.ShiftKey)
-            {
-                if (byEntity.World.Side == EnumAppSide.Client)
-                {
-                    ICoreClientAPI capi = byEntity.World.Api as ICoreClientAPI;
+            //if (isEditable(slot, leftSlot) && !byEntity.Controls.ShiftKey)
+            //{
+            //    if (byEntity.World.Side == EnumAppSide.Client)
+            //    {
+            //        ICoreClientAPI capi = byEntity.World.Api as ICoreClientAPI;
 
-                    new GuiCuneiform(capi, slot, this).TryOpen();
+            //        new GuiCuneiform(capi, slot, this).TryOpen();
 
-                    handHandling = EnumHandHandling.PreventDefault;
-                }
-            }
+            //        handHandling = EnumHandHandling.PreventDefault;
+            //    }
+            //}
             
         }
 
@@ -131,13 +131,13 @@ namespace CuneiformWriting.Items
                 capi.ShowChatMessage("[TabletRender] New Model Ref for " + itemstack.Collectible.Code);
             }
 
-            
 
+
+            renderinfo.CullFaces = true;
             renderinfo.ModelRef = cache.ModelRef;
             //capi.Render.BindTexture2d(cache.Texture.TextureId);
             //capi.Render.GlGenerateTex2DMipmaps();
             renderinfo.NormalShaded = true;
-            renderinfo.CullFaces = true;
 
         }
 
@@ -149,6 +149,16 @@ namespace CuneiformWriting.Items
                 return "claytabletDrawReady";
             }
             return base.GetHeldTpIdleAnimation(activeHotbarSlot, forEntity, hand);
+        }
+
+        public override string GetHeldTpUseAnimation(ItemSlot activeHotbarSlot, Entity forEntity)
+        {
+            EntityPlayer player = forEntity as EntityPlayer;
+            if (player != null && player.LeftHandItemSlot.Empty)
+            {
+                return "tabletRead";
+            }
+            return base.GetHeldTpUseAnimation(activeHotbarSlot, forEntity);
         }
 
         void RebuildBakedTexture(ICoreClientAPI capi, ItemStack stack, TabletRenderCache cache)

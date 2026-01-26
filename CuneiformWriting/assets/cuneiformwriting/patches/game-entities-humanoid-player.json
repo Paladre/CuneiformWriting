@@ -98,5 +98,51 @@
         "ItemAnchorL": "AddAverage"
       }
     }
+  },
+  {
+    "file": "game:entities/humanoid/player.json",
+    "op": "Add",
+    "path": "/client/animations/-",
+    "value": {
+      "code": "tabletread",
+      "animation": "tabletread",
+      "blendMode": "Add",
+      "animationSpeed": 1,
+      "elementWeight": {
+        "UpperArmR": 20,
+        "LowerArmR": 20,
+        "UpperArmL": 20,
+        "LowerArmL": 20
+      },
+      "elementBlendMode": {
+        "UpperArmR": "AddAverage",
+        "LowerArmR": "AddAverage",
+        "UpperArmL": "AddAverage",
+        "LowerArmL": "AddAverage"
+      }
+    }
+  },
+  {
+    "file": "game:entities/humanoid/player.json",
+    "op": "Add",
+    "path": "/client/animations/-",
+    "value": {
+      "code": "tabletread-fp",
+      "animation": "tabletread-fp",
+      "blendMode": "Add",
+      "animationSpeed": 1,
+      "elementWeight": {
+        "UpperArmR": 90,
+        "LowerArmR": 90,
+        "UpperArmL": 90,
+        "LowerArmL": 90
+      },
+      "elementBlendMode": {
+        "UpperArmR": "AddAverage",
+        "LowerArmR": "AddAverage",
+        "UpperArmL": "AddAverage",
+        "LowerArmL": "AddAverage"
+      }
+    }
   }
 ]
