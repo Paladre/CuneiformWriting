@@ -1,5 +1,6 @@
 ﻿
 
+using Cairo.Freetype;
 using CuneiformWriting.Gui;
 using HarmonyLib;
 using System;
@@ -21,6 +22,9 @@ namespace CuneiformWriting.Items
         float baseThickness = 0.015f;
 
         Vec3f origin = new Vec3f(0,0,0);
+
+        int sizeX = 1200;
+        int sizeY = 1600;
 
         public bool AllowHeldIdleHandAnim(Entity forEntity, ItemSlot slot, EnumHand hand)
         {
@@ -55,26 +59,14 @@ namespace CuneiformWriting.Items
             // Only render baked version in world / hand
             if (target == EnumItemRenderTarget.Gui) return;
 
-            
-
             byte[] data = itemstack.Attributes.GetBytes("cuneiform");
+            int hash = data == null ? 0 : HashBytes(data);
 
-            if (data == null || data.Length == 0)
-            {
+            //if (renderinfo.ModelRef == null) return;
 
-                return;
-            }
 
-            
-
-            var system = capi.ModLoader.GetModSystem<CuneiformWritingModSystem>();
-            var cacheDict = system.TabletCache;
-
-            
-
-            int hash = HashBytes(data);
-
-            //int cacheId = GameMath.MurmurHash3(itemstack.Collectible.Id, hash, 1337);
+            //var system = capi.ModLoader.GetModSystem<CuneiformWritingModSystem>();
+            //var cacheDict = system.TabletCache;
 
             string cacheId = itemstack.TempAttributes.GetString("tabletCacheId");
 
@@ -84,60 +76,88 @@ namespace CuneiformWriting.Items
                 itemstack.TempAttributes.SetString("tabletCacheId", cacheId);
             }
 
-            capi.Logger.Notification($"[TabletRender] cacheId={cacheId} hash={hash}");
+            LoadedTexture overlaytexture;
+            if (!this._cuneiformOverlayTextureCache.TryGetValue(cacheId, out overlaytexture))
+            {
+                overlaytexture = new LoadedTexture(capi, 0, sizeX, sizeY);
+                capi.Render.LoadOrUpdateTextureFromRgba(BakePixels(itemstack, sizeX, sizeY), false, 0, ref overlaytexture);
+                capi.Render.BindTexture2d(overlaytexture.TextureId);
+                capi.Render.GlGenerateTex2DMipmaps();
+                this._cuneiformOverlayTextureCache[cacheId] = overlaytexture;
+                this.api.Logger.Debug("Created overlayTexture for " + cacheId);
+            }
 
-            //TabletRenderCache cache;
+            MeshData overlayMesh;
+            if (!this._cuneiformOverlayMeshCache.TryGetValue(cacheId, out overlayMesh))
+            {
+                overlayMesh = QuadMeshUtil.GetQuad();
 
+                overlayMesh.Rotate(origin, GameMath.PIHALF, 0, 0);
+                overlayMesh.Scale(origin, 0.375f, 1f, 0.5f);
+                overlayMesh.Translate(new Vec3f(0.5f, 0.0626f, 0.5f));
+
+                overlayMesh.Indices = overlayMesh.Indices.Reverse<int>().ToArray();
+                overlayMesh.Flags = new int[overlayMesh.VerticesCount];
+                MeshData meshData = overlayMesh;
+                int[] array = new int[4];
+                array[0] = 234881023;
+                array[1] = 234881023;
+                meshData.Flags = array;
+                overlayMesh.Rgba = new byte[overlayMesh.VerticesCount * 4];
+                overlayMesh.Rgba.Fill(byte.MaxValue);
+                //for (int i = 0; i < overlayMesh.Uv.Length; i++)
+                //{
+                //    overlayMesh.Uv[i] *= this.UvSize;
+                //}
+                overlayMesh.TextureIndices = new byte[overlayMesh.VerticesCount / overlayMesh.VerticesPerFace];
+                overlayMesh.AddTextureId(overlaytexture.TextureId);
+                overlayMesh.AddRenderPass(0);
+                this._cuneiformOverlayMeshCache[cacheId] = overlayMesh;
+                this.api.Logger.Debug("Created overlayMesh for " + cacheId);
+            }
+
+            MultiTextureMeshRef modelRef;
+            if (!this._modelCache.TryGetValue(cacheId, out modelRef))
+            {
+                modelRef = new MultiTextureMeshRef(new MeshRef[]
+                {
+                    capi.Render.UploadMesh(overlayMesh),
+                    renderinfo.ModelRef.meshrefs[0]
+                }, new int[]
+                {
+                    overlaytexture.TextureId,
+                    renderinfo.ModelRef.textureids[0]
+                });
+                this._modelCache[cacheId] = modelRef;
+                this.api.Logger.Debug("Created model for " + cacheId);
+            }
             //if (!cacheDict.TryGetValue(cacheId, out cache))
             //{
             //    cache = new TabletRenderCache();
             //    cacheDict[cacheId] = cache;
             //}
 
-            TabletRenderCache cache;
+            //byte[] data = itemstack.Attributes.GetBytes("cuneiform");
 
-            if (!cacheDict.TryGetValue(cacheId, out cache))
-            {
-                cache = new TabletRenderCache();
-                cacheDict[cacheId] = cache;
-            }
+            //int hash = data == null ? 0 : HashBytes(data);
 
-            // rebake if changed
-            if (hash != cache.LastHash)
-            {
-                cache.LastHash = hash;
+            //// rebake if changed
+            //if (hash != cache.LastHash)
+            //{
+            //    cache.LastHash = hash;
 
-                cache.AttachedOverlay = false;
+            //    RebuildBakedTexture(capi, itemstack, cache);
 
-                RebuildBakedTexture(capi, itemstack, cache);
+            //    //capi.ShowChatMessage("[TabletRender] hash and LastHash different, Target is " + target + " for item : " + itemstack.Collectible.Code);
+            //}
+            //if (cache.ModelRef == null || cache.Texture == null) return;
 
-                capi.ShowChatMessage("[TabletRender] hash and LastHash different, Target is " + target + " for item : " + itemstack.Collectible.Code);
-            }
+            //cache.ModelRef = new MultiTextureMeshRef(new[] { renderinfo.ModelRef.meshrefs[0], cache.MeshRef }, new[] { renderinfo.ModelRef.textureids[0], cache.Texture.TextureId });
 
-            if (cache.ModelRef == null && data != null)
-            {
-                RebuildBakedTexture(capi, itemstack, cache);
-                capi.ShowChatMessage("[TabletRender] Modelref is null, Target is " + target + "for item : " + itemstack.Collectible.Code);
-            }
 
-            if (!cache.AttachedOverlay)
-            {
-                cache.ModelRef = new MultiTextureMeshRef(
-                    new[] { renderinfo.ModelRef.meshrefs[0], cache.MeshRef },
-                    new[] { renderinfo.ModelRef.textureids[0], cache.Texture.TextureId }
-                );
-
-                cache.AttachedOverlay = true;
-                capi.ShowChatMessage("[TabletRender] New Model Ref for " + itemstack.Collectible.Code);
-            }
-
-            
-
-            renderinfo.ModelRef = cache.ModelRef;
-            //capi.Render.BindTexture2d(cache.Texture.TextureId);
-            //capi.Render.GlGenerateTex2DMipmaps();
-            renderinfo.NormalShaded = true;
             renderinfo.CullFaces = true;
+            renderinfo.ModelRef = modelRef;
+            renderinfo.NormalShaded = true;
 
         }
 
@@ -154,8 +174,7 @@ namespace CuneiformWriting.Items
         void RebuildBakedTexture(ICoreClientAPI capi, ItemStack stack, TabletRenderCache cache)
         {
             // create new image pixels
-            int sizeX = 1200;
-            int sizeY = 1600;
+            
 
             int[] rgba = BakePixels(stack, sizeX, sizeY);
 
@@ -429,6 +448,42 @@ namespace CuneiformWriting.Items
             return pixels;
         }
 
+        public override void OnUnloaded(ICoreAPI api)
+        {
+            base.OnUnloaded(api);
+            foreach (MeshData meshData in this._cuneiformOverlayMeshCache.Values)
+            {
+                if (meshData != null)
+                {
+                    meshData.Dispose();
+                }
+            }
+            this._cuneiformOverlayMeshCache.Clear();
+
+            foreach (LoadedTexture loadedTexture in this._cuneiformOverlayTextureCache.Values)
+            {
+                if (loadedTexture != null)
+                {
+                    loadedTexture.Dispose();
+                }
+            }
+            this._cuneiformOverlayTextureCache.Clear();
+
+            foreach (MultiTextureMeshRef multiTextureMeshRef in this._modelCache.Values)
+            {
+                if (multiTextureMeshRef != null)
+                {
+                    multiTextureMeshRef.Dispose();
+                }
+            }
+            this._modelCache.Clear();
+        }
+
+        private readonly Dictionary<string, MeshData> _cuneiformOverlayMeshCache = new Dictionary<string, MeshData>();
+
+        private readonly Dictionary<string, LoadedTexture> _cuneiformOverlayTextureCache = new Dictionary<string, LoadedTexture>();
+
+        private readonly Dictionary<string, MultiTextureMeshRef> _modelCache = new Dictionary<string, MultiTextureMeshRef>();
         
     }
 }

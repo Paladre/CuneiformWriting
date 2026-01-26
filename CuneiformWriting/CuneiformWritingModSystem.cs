@@ -89,7 +89,7 @@ namespace CuneiformWriting
             public MeshRef MeshRef;
             public MultiTextureMeshRef ModelRef;
             public int LastHash;
-            public bool AttachedOverlay;
+            //public bool AttachedOverlay;
         }
 
     }
