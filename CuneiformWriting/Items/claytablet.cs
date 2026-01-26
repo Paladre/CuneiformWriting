@@ -68,7 +68,7 @@ namespace CuneiformWriting.Items
             base.OnBeforeRender(capi, itemstack, target, ref renderinfo);
 
             // Only render baked version in world / hand
-            if (target == EnumItemRenderTarget.Gui) return;
+            //if (target == EnumItemRenderTarget.Gui) return;
 
             
 
@@ -89,8 +89,6 @@ namespace CuneiformWriting.Items
 
             int hash = HashBytes(data);
 
-            //int cacheId = GameMath.MurmurHash3(itemstack.Collectible.Id, hash, 1337);
-
             string cacheId = itemstack.TempAttributes.GetString("tabletCacheId");
 
             if (cacheId == null)
@@ -101,14 +99,6 @@ namespace CuneiformWriting.Items
 
             capi.Logger.Notification($"[TabletRender] cacheId={cacheId} hash={hash}");
 
-            //TabletRenderCache cache;
-
-            //if (!cacheDict.TryGetValue(cacheId, out cache))
-            //{
-            //    cache = new TabletRenderCache();
-            //    cacheDict[cacheId] = cache;
-            //}
-
             TabletRenderCache cache;
 
             if (!cacheDict.TryGetValue(cacheId, out cache))
@@ -117,7 +107,6 @@ namespace CuneiformWriting.Items
                 cacheDict[cacheId] = cache;
             }
 
-            // rebake if changed
             if (hash != cache.LastHash)
             {
                 cache.LastHash = hash;
@@ -147,6 +136,11 @@ namespace CuneiformWriting.Items
             }
 
 
+            //LoadedTexture overlayTexture = cache.Texture;
+            //float overlayOpacity = 0f;
+
+            //renderinfo.OverlayOpacity = overlayOpacity;
+            //renderinfo.OverlayTexture = overlayTexture;
 
             renderinfo.CullFaces = true;
             renderinfo.ModelRef = cache.ModelRef;
@@ -476,6 +470,10 @@ namespace CuneiformWriting.Items
 
             return pixels;
         }
+
+        private LoadedTexture _tabletTexture;
+
+        private MeshRef _tabletMesh;
 
         
     }

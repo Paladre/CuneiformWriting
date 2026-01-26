@@ -29,10 +29,22 @@ namespace CuneiformWriting.Items
 
                 new GuiCuneiform(capi, leftSlot, leftSlot.Itemstack.Item as claytablet).TryOpen();
 
+                //capi.SendChatMessage("[Cuneiform Writing] Stylus OnHeldInteractStart");
+                isWriting = true;
+
                 handHandling = EnumHandHandling.PreventDefault;
             }
 
 
+        }
+
+        public override void OnHeldInteractStop(float secondsUsed, ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel)
+        {
+            base.OnHeldInteractStop(secondsUsed, slot, byEntity, blockSel, entitySel);
+
+            ICoreClientAPI capi = byEntity.World.Api as ICoreClientAPI;
+            //capi.SendChatMessage("[Cuneiform Writing] Stylus OnHeldInteractStop used for " + secondsUsed);
+            isWriting = false;
         }
 
         public static bool isRawClayTablet(ItemSlot slot)
@@ -40,35 +52,8 @@ namespace CuneiformWriting.Items
             return slot.Itemstack?.Collectible.Attributes?.IsTrue("isClayTabletEditable") == true;
         }
 
-        //public override string GetHeldReadyAnimation(ItemSlot activeHotbarSlot, Entity forEntity, EnumHand hand)
-        //{
-        //    EntityPlayer player = forEntity as EntityPlayer;
-        //    if (player != null && isRawClayTablet(player.LeftHandItemSlot))
-        //    {
-        //        return "claytabletDrawReady";
-        //    }
-        //    return base.GetHeldReadyAnimation(activeHotbarSlot, forEntity, hand);
-        //}
-
-        //public override string GetHeldTpIdleAnimation(ItemSlot activeHotbarSlot, Entity forEntity, EnumHand hand)
-        //{
-        //    EntityPlayer player = forEntity as EntityPlayer;
-        //    if (player != null && isRawClayTablet(player.LeftHandItemSlot))
-        //    {
-        //        return "claytabletDrawReady";
-        //    }
-        //    return base.GetHeldTpIdleAnimation(activeHotbarSlot, forEntity, hand);
-        //}
-
-        //public override string GetHeldTpUseAnimation(ItemSlot activeHotbarSlot, Entity forEntity)
-        //{
-        //    EntityPlayer player = forEntity as EntityPlayer;
-        //    if (player != null && isRawClayTablet(player.LeftHandItemSlot))
-        //    {
-        //        return "claytabletDrawReady";
-        //    }
-        //    return base.GetHeldTpUseAnimation(activeHotbarSlot, forEntity);
-        //}
+        private static bool isWriting;
+        
 
     }
 }
