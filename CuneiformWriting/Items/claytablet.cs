@@ -22,9 +22,24 @@ namespace CuneiformWriting.Items
 
         Vec3f origin = new Vec3f(0,0,0);
 
+        public Item BlankVariant { get; private set; }
+
         public bool AllowHeldIdleHandAnim(Entity forEntity, ItemSlot slot, EnumHand hand)
         {
             return !isEditable(forEntity);
+        }
+
+        public override void OnLoaded(ICoreAPI api)
+        {
+            base.OnLoaded(api);
+
+            if (Variant.ContainsKey("color") && Variant.ContainsKey("state"))
+            {
+                string color = Variant["color"];
+                string state = Variant["state"];
+                AssetLocation loc = CodeWithVariants(["color", "state"], [color, state]);
+                BlankVariant = api.World.GetItem(loc);
+            }
         }
 
         public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handHandling)
@@ -159,6 +174,29 @@ namespace CuneiformWriting.Items
                 return "tabletRead";
             }
             return base.GetHeldTpUseAnimation(activeHotbarSlot, forEntity);
+        }
+
+        public override void OnGroundIdle(EntityItem entityItem)
+        {
+            base.OnGroundIdle(entityItem);
+
+            IWorldAccessor world = entityItem.World;
+            if (world.Side != EnumAppSide.Server) return;
+
+            if (!canBeErased(entityItem)) return;
+
+            if (entityItem.Swimming && world.Rand.NextDouble() < 0.01 && BlankVariant != null)
+            {
+                int q = entityItem.Itemstack.StackSize;
+                entityItem.Itemstack = new ItemStack(BlankVariant);
+                entityItem.Itemstack.StackSize = q;
+            }
+        }
+
+        private static bool canBeErased(EntityItem entityItem)
+        {
+            if (entityItem.Itemstack?.Collectible.Attributes?.IsTrue("isClayTabletEditable") == true && entityItem.Itemstack.Attributes.HasAttribute("cuneiform")) return true;
+            return false;
         }
 
         void RebuildBakedTexture(ICoreClientAPI capi, ItemStack stack, TabletRenderCache cache)
