@@ -15,26 +15,43 @@ namespace CuneiformWriting.Items
 {
     public class stylus : Item
     {
+        CuneiformWritingModSystem modSystem;
+        ICoreClientAPI capi;
+
+        public override void OnLoaded(ICoreAPI api)
+        {
+            base.OnLoaded(api);
+            capi = api as ICoreClientAPI;
+            modSystem = api.ModLoader.GetModSystem<CuneiformWritingModSystem>();
+            // interactions
+        }
         public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handHandling)
         {
-            base.OnHeldInteractStart(slot, byEntity, blockSel, entitySel, firstEvent, ref handHandling);
-
-            ItemSlot leftSlot = byEntity.LeftHandItemSlot;
-
-            if (!isRawClayTablet(leftSlot)) return;
-
-            if (byEntity.World.Side == EnumAppSide.Client)
+            if (byEntity.Controls.ShiftKey)
             {
-                ICoreClientAPI capi = byEntity.World.Api as ICoreClientAPI;
-
-                new GuiCuneiform(capi, leftSlot, leftSlot.Itemstack.Item as claytablet).TryOpen();
-
-                //capi.SendChatMessage("[Cuneiform Writing] Stylus OnHeldInteractStart");
-                isWriting = true;
-
-                handHandling = EnumHandHandling.PreventDefault;
+                base.OnHeldInteractStart(slot, byEntity, blockSel, entitySel, firstEvent, ref handHandling);
+                return;
             }
 
+            var player = (byEntity as EntityPlayer).Player;
+            ItemSlot leftSlot = byEntity.LeftHandItemSlot;
+
+            if (isRawClayTablet(leftSlot))
+            {
+                modSystem.BeginEdit(player, leftSlot);
+
+                if (api.Side == EnumAppSide.Client)
+                {
+                    var dlg = new GuiCuneiform(api as ICoreClientAPI, leftSlot.Itemstack);
+                    dlg.OnClosed += () =>
+                    {
+                        modSystem.EndEdit(player, dlg.data);
+                    };
+                    dlg.TryOpen();
+                }
+                handHandling = EnumHandHandling.PreventDefault;
+                return;
+            }
 
         }
 

@@ -6,6 +6,7 @@ using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
+using Vintagestory.API.Server;
 
 namespace CuneiformWriting.Gui
 {
@@ -18,8 +19,6 @@ namespace CuneiformWriting.Gui
     public class GuiCuneiform : GuiDialog
     {
         ICoreClientAPI capi;
-        ItemSlot sourceSlot;
-        claytablet tabletItem;
 
         LoadedTexture strokeTexture;
         LoadedTexture hookTexture;
@@ -31,6 +30,7 @@ namespace CuneiformWriting.Gui
         ElementBounds tabletBounds;
 
         List<CuneiformStroke> strokes = new List<CuneiformStroke>();
+        public byte[] data;
 
         Vec2f strokeStart;
         Vec2f strokeEnd;
@@ -45,16 +45,12 @@ namespace CuneiformWriting.Gui
 
         StrokeType type = StrokeType.stroke;
 
-        public GuiCuneiform(ICoreClientAPI capi, ItemSlot sourceSlot, claytablet tabletItem) : base(capi)
+        public GuiCuneiform(ICoreClientAPI capi, ItemStack stack) : base(capi)
         {
             this.capi = capi;
-            this.sourceSlot = sourceSlot;
-            this.tabletItem = tabletItem;
 
-            string code = sourceSlot.Itemstack.Collectible.Code;
-            //capi.ShowChatMessage("code is : " + code);
+            string code = stack.Collectible.Code;
             string color = code.Split('-')[1];
-            //capi.ShowChatMessage("color is : " + color);
             string bgpath = "game:textures/block/clay/" + color + "clay.png";
 
             strokeTexture = new LoadedTexture(capi);
@@ -72,6 +68,10 @@ namespace CuneiformWriting.Gui
                 new AssetLocation(bgpath),
                 ref tabletbg
             );
+            if (stack.Attributes.HasAttribute("cuneiform"))
+            {
+                strokes = Utils.StrokesUtils.LoadStrokes(stack);
+            }
         }
 
         public override string ToggleKeyCombinationCode => null;
@@ -104,8 +104,6 @@ namespace CuneiformWriting.Gui
                 .AddInteractiveElement(drawElement)
                 .Compose();
 
-            //capi.ShowChatMessage("GUI with custom draw opened");
-            strokes = tabletItem.LoadStrokes(sourceSlot.Itemstack);
             RebuildMeshesFromStrokes();
         }
 
@@ -115,13 +113,13 @@ namespace CuneiformWriting.Gui
 
             foreach (var mesh in strokeMeshes)
                 mesh.Dispose();
+            data = SerializeStrokes();
 
             base.OnGuiClosed();
         }
 
         public override void OnMouseDown(MouseEvent e)
         {
-            //if (isDragging) return;
 
             if (!isDrawing)
             {
@@ -169,7 +167,7 @@ namespace CuneiformWriting.Gui
                             typeofstroke = type
                         };
                         strokes.Add(newStroke);
-                        SendSaveToServer();
+                        //SendSaveToServer();
 
                         strokeMeshes.Add(ghostMesh);
                         ghostMesh = null;
@@ -510,15 +508,6 @@ namespace CuneiformWriting.Gui
                 y - length / 4f >= 0f;
         }
 
-        void SendSaveToServer()
-        {
-            byte[] data = SerializeStrokes();
-            int index = sourceSlot.Inventory.GetSlotId(sourceSlot);
-
-            capi.Network.GetChannel("cuneiform")
-                .SendPacket(new PacketSaveTablet { Data = data });
-        }
-
         byte[] SerializeStrokes()
         {
             TreeAttribute tree = new TreeAttribute();
@@ -547,9 +536,7 @@ namespace CuneiformWriting.Gui
 
         }
 
-        
 
-        
     }
 
 }

@@ -2,85 +2,108 @@
 using CuneiformWriting.Render;
 using HarmonyLib;
 using System.Collections.Generic;
+using System.Net.Sockets;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.Server;
+using Vintagestory.GameContent;
 
 namespace CuneiformWriting
 {
     public class CuneiformWritingModSystem : ModSystem
     {
-        Harmony harmony;
+        public static string ModId;
+
+        ICoreAPI Api;
+
+        private static Harmony Harmony { get; set; }
+
+        Dictionary<string, ItemSlot> nowEditing = new Dictionary<string, ItemSlot>();
 
         // Called on server and client
         // Useful for registering block/entity classes on both sides
         public override void Start(ICoreAPI api)
         {
-            api.RegisterItemClass(Mod.Info.ModID + ".claytablet", typeof(claytablet));
-            api.RegisterItemClass(Mod.Info.ModID + ".stylus", typeof(stylus));
-
-            api.Network.RegisterChannel("cuneiform")
-                .RegisterMessageType<PacketSaveTablet>();
-            harmony = new Harmony(Mod.Info.ModID + ".pitkiln");
-            harmony.PatchAll();
+            api.RegisterItemClass(CuneiformWritingModSystem.ModId + ".claytablet", typeof(claytablet));
+            api.RegisterItemClass(CuneiformWritingModSystem.ModId + ".stylus", typeof(stylus));
+            api.Network.RegisterChannel(CuneiformWritingModSystem.ModId).RegisterMessageType<PacketSaveTablet>();
+            base.Start(api);
         }
 
-        public override void StartServerSide(ICoreServerAPI api)
+        public override void StartServerSide(ICoreServerAPI sapi)
         {
             //Mod.Logger.Notification("Hello from template mod server side: " + Lang.Get("cuneiformwriting:hello"));
-            api.Network.GetChannel("cuneiform")
-                .SetMessageHandler<PacketSaveTablet>(OnSaveFromClient);
+            base.StartServerSide(sapi);
+            sapi.Network.GetChannel(CuneiformWritingModSystem.ModId).SetMessageHandler<PacketSaveTablet>(OnSaveFromClient);
+            
+            //sapi.Network.RegisterChannel(CuneiformWritingModSystem.ModId).RegisterMessageType(typeof(PacketSaveTablet)).SetMessageHandler<CuneiformWriting.PacketSaveTablet>(new NetworkClientMessageHandler<CuneiformWriting.PacketSaveTablet>(this.OnSaveFromClient));
+        }
+
+        public override void StartPre(ICoreAPI api)
+        {
+            base.StartPre(api);
+            this.Api = api;
+            CuneiformWritingModSystem.ModId = base.Mod.Info.ModID;
+            CuneiformWritingModSystem.Harmony = new Harmony(CuneiformWritingModSystem.ModId);
+            CuneiformWritingModSystem.Harmony.PatchAll();
+
         }
 
         public override void StartClientSide(ICoreClientAPI capi)
         {
             base.StartClientSide(capi);
-            capi.RegisterEntityRendererClass("claytablet", typeof(TabletItemRenderer));
         }
 
-        private void OnSaveFromClient(IServerPlayer player, PacketSaveTablet msg)
+        private void OnSaveFromClient(IServerPlayer fromPlayer, PacketSaveTablet packet)
         {
-            var slot = player.InventoryManager.ActiveHotbarSlot;
+            //var slot = player.InventoryManager.OffhandHotbarSlot;
 
-            if (!player.InventoryManager.ActiveHotbarSlot.Itemstack?.Collectible.Attributes?.IsTrue("isClayTabletEditable") == true)
+            if (nowEditing.TryGetValue(fromPlayer.PlayerUID, out var slot))
             {
-                slot = player.InventoryManager.OffhandHotbarSlot;
+                EndEdit(fromPlayer, packet.Data);
             }
-            
 
+            //if (slot == null) return;
 
-            if (slot == null) return;
+            //slot.Itemstack.Attributes.SetBytes("cuneiform", msg.Data);
+            //slot.Itemstack.Attributes.SetBool("shouldTabletRefresh", true);
 
-            slot.Itemstack.Attributes.SetBytes("cuneiform", msg.Data);
-
-            slot.MarkDirty();
+            //slot.MarkDirty();
         }
 
-        //public override void AssetsFinalize(ICoreAPI api)
+        public void BeginEdit(IPlayer player, ItemSlot slot)
+        {
+            nowEditing[player.PlayerUID] = slot;
+        }
+
+        public void EndEdit(IPlayer player, byte[] data)
+        {
+            if (nowEditing.TryGetValue(player.PlayerUID, out var slot))
+            {
+                slot.Itemstack.Attributes.SetBytes("cuneiform", data);
+                slot.Itemstack.Attributes.SetBool("shouldTabletRefresh", true);
+
+                slot.MarkDirty();
+
+                if (Api is ICoreClientAPI capi)
+                {
+                    capi.Network.GetChannel(CuneiformWritingModSystem.ModId).SendPacket(new PacketSaveTablet() { Data = data });
+                }
+            }
+            nowEditing.Remove(player.PlayerUID);
+        }
+
+        //public void CancelEdit(IPlayer player)
         //{
-        //    foreach (Item i in api.World.Items)
+        //    nowEditing.Remove(player.PlayerUID);
+
+        //    if (Api is ICoreClientAPI capi)
         //    {
-                
+        //        capi.Network.GetChannel(CuneiformWritingModSystem.ModId).SendPacket(new PacketSaveTablet());
+        //        // play sound ? (see ModSystemEditableBook)
         //    }
         //}
-
-        byte[] SerializeEmpty()
-        {
-            TreeAttribute tree = new TreeAttribute();
-
-            tree.SetInt("count", 1);
-
-            tree.SetFloat("x1", 0);
-            tree.SetFloat("y1", 0);
-            tree.SetFloat("x2", 0);
-            tree.SetFloat("y2", 0);
-            tree.SetInt("t", 0);
-
-            return tree.ToBytes();
-        }
-
-        
 
         public class TabletRenderCache
         {
