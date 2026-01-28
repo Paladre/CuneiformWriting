@@ -16,13 +16,94 @@ using static CuneiformWriting.CuneiformWritingModSystem;
 
 namespace CuneiformWriting.Items
 {
-    public class claytablet : Item, IHeldHandAnimOverrider
+
+    public class claytabletground : Item, IContainedMeshSource
+    {
+        string texturePath;
+
+        ICoreClientAPI capi;
+        public override void OnLoaded(ICoreAPI api)
+        {
+            base.OnLoaded(api);
+            capi = api as ICoreClientAPI;
+            if (LastCodePart() == "fired")
+            {
+                texturePath = "block/clay/hardened/" + LastCodePart(1);
+            }
+            else
+            {
+                texturePath = "block/clay/" + LastCodePart(1) + "clay";
+            }
+        }
+
+        public MeshData GenMesh(ItemStack itemstack, ITextureAtlasAPI targetAtlas)
+        {
+            
+            ContainedTextureSource cnts = genTextureSource(itemstack, targetAtlas);
+            
+            capi.Tesselator.TesselateItem(this, out MeshData mesh, cnts);
+            //if (itemstack.Attributes.GetBytes("cuneiform") == null) return null;
+
+            //var capi = api as ICoreClientAPI;
+            //var loc = AssetLocation.Create("cuneiformwriting:shapes/item/claytablet.json");
+            //var asset = capi.Assets.TryGet(loc);
+            //var shape = asset.ToObject<Shape>();
+            //var cnts = new ContainedTextureSource(capi, targetAtlas, shape.Textures, string.Format("For displayed item {0}", Code));
+            //capi.Tesselator.TesselateShape(new TesselationMetaData() { TexSource = cnts }, shape, out var meshdata);
+            //cnts =
+            return mesh;
+        }
+
+        public MeshData GenMesh(ItemStack itemstack, ITextureAtlasAPI targetAtlas, BlockPos pos)
+        {
+            return GenMesh(itemstack, targetAtlas);
+        }
+
+        private ContainedTextureSource genTextureSource(ItemStack itemstack, ITextureAtlasAPI targetAtlas)
+        {
+            var cnts = new ContainedTextureSource(api as ICoreClientAPI, targetAtlas, new Dictionary<string, AssetLocation>(), string.Format("For render in tablet {0}", Code));
+            cnts.Textures.Clear();
+            
+            string color = LastCodePart(1);
+            string state = LastCodePart(0);
+
+            if (state == "raw")
+            {
+                cnts.Textures["clay"] = cnts.Textures["top"] = new AssetLocation("block/clay/" + color + "clay.png");
+            }
+            else
+            {
+                cnts.Textures["clay"] = cnts.Textures["top"] = new AssetLocation("block/clay/hardened/" + color + ".png");
+            }
+            return cnts;
+        }
+
+        public string GetMeshCacheKey(ItemStack itemstack)
+        {
+            return itemstack.Collectible.Code + "-onGround";
+        }
+    }
+
+
+
+
+    public class claytablet : claytabletground, IHeldHandAnimOverrider
     {
         float baseThickness = 0.015f;
 
         Vec3f origin = new Vec3f(0,0,0);
 
-        public Item BlankVariant { get; private set; }
+        ICoreClientAPI cApi;
+
+        int tabletH = 640;
+        int tabletW = 480;
+
+        Dictionary<int, MultiTextureMeshRef> meshrefs => ObjectCacheUtil.GetOrCreate(api, "tabletmeshrefs", () => new Dictionary<int, MultiTextureMeshRef>());
+
+        //string color;
+        //string state;
+
+        //public Item BlankVariant { get; private set; }
 
         public bool AllowHeldIdleHandAnim(Entity forEntity, ItemSlot slot, EnumHand hand)
         {
@@ -32,15 +113,23 @@ namespace CuneiformWriting.Items
         public override void OnLoaded(ICoreAPI api)
         {
             base.OnLoaded(api);
-
-            if (Variant.ContainsKey("color") && Variant.ContainsKey("state"))
-            {
-                string color = Variant["color"];
-                string state = Variant["state"];
-                AssetLocation loc = CodeWithVariants(["color", "state"], [color, state]);
-                BlankVariant = api.World.GetItem(loc);
-            }
+            cApi = api as ICoreClientAPI;
+            //color = LastCodePart(1);
+            //state = LastCodePart();
         }
+
+        //public override void OnLoaded(ICoreAPI api)
+        //{
+        //    base.OnLoaded(api);
+
+        //    if (Variant.ContainsKey("color") && Variant.ContainsKey("state"))
+        //    {
+        //        string color = Variant["color"];
+        //        string state = Variant["state"];
+        //        AssetLocation loc = CodeWithVariants(["color", "state"], [color, state]);
+        //        BlankVariant = api.World.GetItem(loc);
+        //    }
+        //}
 
         public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handHandling)
         {
@@ -65,88 +154,101 @@ namespace CuneiformWriting.Items
         public override void OnBeforeRender(ICoreClientAPI capi, ItemStack itemstack, EnumItemRenderTarget target, ref ItemRenderInfo renderinfo)
         {
 
-            base.OnBeforeRender(capi, itemstack, target, ref renderinfo);
+
 
             // Only render baked version in world / hand
             //if (target == EnumItemRenderTarget.Gui) return;
 
-            
+            //if (target != EnumItemRenderTarget.Gui) capi.ShowChatMessage("last code part : " + codePart);
 
             byte[] data = itemstack.Attributes.GetBytes("cuneiform");
 
-            if (data == null || data.Length == 0)
-            {
+            //if (data == null || data.Length == 0)
+            //{
 
-                return;
+            //    return;
+            //}
+
+
+
+            //var system = capi.ModLoader.GetModSystem<CuneiformWritingModSystem>();
+            //var cacheDict = system.TabletCache;
+
+
+
+            //int hash = HashBytes(data);
+
+            //string cacheId = itemstack.TempAttributes.GetString("tabletCacheId");
+
+            //if (cacheId == null)
+            //{
+            //    cacheId = Guid.NewGuid().ToString();
+            //    itemstack.TempAttributes.SetString("tabletCacheId", cacheId);
+            //}
+
+            ////capi.Logger.Notification($"[TabletRender] cacheId={cacheId} hash={hash}");
+
+            //TabletRenderCache cache;
+
+            //if (!cacheDict.TryGetValue(cacheId, out cache))
+            //{
+            //    cache = new TabletRenderCache();
+            //    cacheDict[cacheId] = cache;
+            //}
+
+            //if (hash != cache.LastHash)
+            //{
+            //    cache.LastHash = hash;
+
+            //    cache.AttachedOverlay = false;
+
+            //    RebuildBakedTexture(capi, itemstack, cache);
+
+            //    capi.ShowChatMessage("[TabletRender] hash and LastHash different, Target is " + target + " for item : " + itemstack.Collectible.Code);
+            //}
+
+            //if (cache.ModelRef == null && data != null)
+            //{
+            //    RebuildBakedTexture(capi, itemstack, cache);
+            //    capi.ShowChatMessage("[TabletRender] Modelref is null, Target is " + target + "for item : " + itemstack.Collectible.Code);
+            //}
+
+            //if (!cache.AttachedOverlay)
+            //{
+            //    cache.ModelRef = new MultiTextureMeshRef(
+            //        new[] { renderinfo.ModelRef.meshrefs[0], cache.MeshRef },
+            //        new[] { renderinfo.ModelRef.textureids[0], cache.Texture.TextureId }
+            //    );
+
+            //    cache.AttachedOverlay = true;
+            //    capi.ShowChatMessage("[TabletRender] New Model Ref for " + itemstack.Collectible.Code);
+            //}
+
+
+            ////LoadedTexture overlayTexture = cache.Texture;
+            ////float overlayOpacity = 0f;
+
+            ////renderinfo.OverlayOpacity = overlayOpacity;
+            ////renderinfo.OverlayTexture = overlayTexture;
+
+            //renderinfo.CullFaces = true;
+            //renderinfo.ModelRef = cache.ModelRef;
+            ////capi.Render.BindTexture2d(cache.Texture.TextureId);
+            ////capi.Render.GlGenerateTex2DMipmaps();
+            //renderinfo.NormalShaded = true;
+            //base.OnBeforeRender(capi, itemstack, target, ref renderinfo);
+
+            int meshrefid = itemstack.TempAttributes.GetInt("meshRefId");
+            if (meshrefid == 0 || !meshrefs.TryGetValue(meshrefid, out renderinfo.ModelRef))
+            {
+                int id = meshrefs.Count + 1;
+                var modelref = capi.Render.UploadMultiTextureMesh(GenMesh(itemstack, capi.ItemTextureAtlas));
+                renderinfo.ModelRef = meshrefs[id] = modelref;
+
+                itemstack.TempAttributes.SetInt("meshRefId", id);
             }
 
-            
-
-            var system = capi.ModLoader.GetModSystem<CuneiformWritingModSystem>();
-            var cacheDict = system.TabletCache;
-
-            
-
-            int hash = HashBytes(data);
-
-            string cacheId = itemstack.TempAttributes.GetString("tabletCacheId");
-
-            if (cacheId == null)
-            {
-                cacheId = Guid.NewGuid().ToString();
-                itemstack.TempAttributes.SetString("tabletCacheId", cacheId);
-            }
-
-            capi.Logger.Notification($"[TabletRender] cacheId={cacheId} hash={hash}");
-
-            TabletRenderCache cache;
-
-            if (!cacheDict.TryGetValue(cacheId, out cache))
-            {
-                cache = new TabletRenderCache();
-                cacheDict[cacheId] = cache;
-            }
-
-            if (hash != cache.LastHash)
-            {
-                cache.LastHash = hash;
-
-                cache.AttachedOverlay = false;
-
-                RebuildBakedTexture(capi, itemstack, cache);
-
-                capi.ShowChatMessage("[TabletRender] hash and LastHash different, Target is " + target + " for item : " + itemstack.Collectible.Code);
-            }
-
-            if (cache.ModelRef == null && data != null)
-            {
-                RebuildBakedTexture(capi, itemstack, cache);
-                capi.ShowChatMessage("[TabletRender] Modelref is null, Target is " + target + "for item : " + itemstack.Collectible.Code);
-            }
-
-            if (!cache.AttachedOverlay)
-            {
-                cache.ModelRef = new MultiTextureMeshRef(
-                    new[] { renderinfo.ModelRef.meshrefs[0], cache.MeshRef },
-                    new[] { renderinfo.ModelRef.textureids[0], cache.Texture.TextureId }
-                );
-
-                cache.AttachedOverlay = true;
-                capi.ShowChatMessage("[TabletRender] New Model Ref for " + itemstack.Collectible.Code);
-            }
-
-
-            //LoadedTexture overlayTexture = cache.Texture;
-            //float overlayOpacity = 0f;
-
-            //renderinfo.OverlayOpacity = overlayOpacity;
-            //renderinfo.OverlayTexture = overlayTexture;
-
-            renderinfo.CullFaces = true;
-            renderinfo.ModelRef = cache.ModelRef;
-            //capi.Render.BindTexture2d(cache.Texture.TextureId);
-            //capi.Render.GlGenerateTex2DMipmaps();
-            renderinfo.NormalShaded = true;
+            base.OnBeforeRender(capi, itemstack, target, ref renderinfo);
 
         }
 
@@ -170,22 +272,22 @@ namespace CuneiformWriting.Items
             return base.GetHeldTpUseAnimation(activeHotbarSlot, forEntity);
         }
 
-        public override void OnGroundIdle(EntityItem entityItem)
-        {
-            base.OnGroundIdle(entityItem);
+        //public override void OnGroundIdle(EntityItem entityItem)
+        //{
+        //    base.OnGroundIdle(entityItem);
 
-            IWorldAccessor world = entityItem.World;
-            if (world.Side != EnumAppSide.Server) return;
+        //    IWorldAccessor world = entityItem.World;
+        //    if (world.Side != EnumAppSide.Server) return;
 
-            if (!canBeErased(entityItem)) return;
+        //    if (!canBeErased(entityItem)) return;
 
-            if (entityItem.Swimming && world.Rand.NextDouble() < 0.01 && BlankVariant != null)
-            {
-                int q = entityItem.Itemstack.StackSize;
-                entityItem.Itemstack = new ItemStack(BlankVariant);
-                entityItem.Itemstack.StackSize = q;
-            }
-        }
+        //    if (entityItem.Swimming && world.Rand.NextDouble() < 0.01 && BlankVariant != null)
+        //    {
+        //        int q = entityItem.Itemstack.StackSize;
+        //        entityItem.Itemstack = new ItemStack(BlankVariant);
+        //        entityItem.Itemstack.StackSize = q;
+        //    }
+        //}
 
         private static bool canBeErased(EntityItem entityItem)
         {
@@ -196,18 +298,18 @@ namespace CuneiformWriting.Items
         void RebuildBakedTexture(ICoreClientAPI capi, ItemStack stack, TabletRenderCache cache)
         {
             // create new image pixels
-            int sizeX = 1200;
-            int sizeY = 1600;
+            //int sizeX = 1200;
+            //int sizeY = 1600;
 
-            int[] rgba = BakePixels(stack, sizeX, sizeY);
+            int[] rgba = BakePixels(stack, tabletW, tabletH);
 
             // upload or update texture
             if (cache.Texture == null)
             {
-                cache.Texture = new LoadedTexture(capi, 0, sizeX, sizeY);
+                cache.Texture = new LoadedTexture(capi, 0, tabletW, tabletH);
             }
 
-            capi.Render.LoadOrUpdateTextureFromRgba(
+            capi.Render.LoadOrUpdateTextureFromBgra(
                 rgba,
                 false,
                 0,
@@ -357,7 +459,7 @@ namespace CuneiformWriting.Items
 
                     for (int x = x0; x <= x1; x++)
                     {
-                        pixels[x + y * W] = color;
+                        pixels[x + y * W] = ColorUtil.ColorMultiplyEach(pixels[x + y * W], color);
                     }
                 }
             }
@@ -367,9 +469,9 @@ namespace CuneiformWriting.Items
         {
             Vec2i newPos = new Vec2i();
 
-            newPos.X = (int)(pos.X * 1200f);
+            newPos.X = (int)(pos.X * tabletW);
             //Debug.WriteLine(newPos.X);
-            newPos.Y = (int)(pos.Y * 1600f);
+            newPos.Y = (int)(pos.Y * tabletH);
             //Debug.WriteLine(newPos.Y);
 
 
@@ -390,7 +492,7 @@ namespace CuneiformWriting.Items
             float dx = delta.X * 3f;
             float dy = delta.Y * 4f;
 
-            float currentThickness = (baseThickness + s.thicknessDelta) / 2f;
+            float currentThickness = (baseThickness + s.thicknessDelta) / 4f;
 
             float angleRad = (float)Math.Atan2(dy, dx);
 
@@ -434,28 +536,56 @@ namespace CuneiformWriting.Items
         {
             List<CuneiformStroke> strokes = LoadStrokes(stack);
 
+            //var texAsset = api.Assets.Get(new AssetLocation("cuneiformwriting", "textures/gui/tablet_bg.png"));
+            AssetLocation texPath = new AssetLocation("block/clay/redclay");
+            IAsset texAsset = cApi.Assets.TryGet(texPath.Clone().WithPathPrefixOnce("textures/").WithPathAppendixOnce(".png"));
+
+            BitmapRef bmp = texAsset.ToBitmap(cApi);
+            int[] basePixels = bmp.Pixels;
+            int[] bgPixels = new int[24 * 32];
+
+            for (int i = 0; i < bgPixels.Length; i++)
+            {
+                bgPixels[i] = basePixels[i % 24 + 32 * (i / 24)];
+            }
+
+            //cApi.ShowChatMessage("Size of basePixels array (should be 768) : " + basePixels.Length);
 
             int[] pixels = new int[width * height];
 
-            int transparent = 0x00000000;
+            //int transparent = 0x00000000;
 
             //int clay =
             //    (255 << 24) |   // A
             //    (210 << 16) |   // R
             //    (180 << 8) |   // G
             //    140;
+            int coeff = height / 32;
 
             for (int i = 0; i < pixels.Length; i++)
             {
-                pixels[i] = transparent;
+                
+                int basepos = ((i / coeff) % 24) + 24 * (i / (coeff * width));
+                if (basepos < 0 || basepos > bgPixels.Length)
+                {
+                    cApi.Logger.Notification(" out of bounds basepos, value is : " + basepos + " at i = " + i);
+                }
+
+                pixels[i] = bgPixels[basepos];
+                //pixels[i] = transparent;
             }
 
+            //int strokeColor = ColorUtil.ToRgba();
             //  ink color 
-            int ink =
-                (140 << 24) |
-                (20 << 16) |
-                (20 << 8) |
-                20;
+            //int ink =
+            //    (140 << 24) |
+            //    (20 << 16) |
+            //    (20 << 8) |
+            //    20;
+            //Random rnd = new Random();
+            //int randomPixel = rnd.Next(0,767);
+            //int ink = basePixels[randomPixel];
+            int ink = basePixels[230];
 
             //  rasterize strokes 
             foreach (var s in strokes)
@@ -467,6 +597,9 @@ namespace CuneiformWriting.Items
 
                 FillPolygon(pixels, width, height, poly, ink);
             }
+
+            BakedBitmap pixelsbmp = new BakedBitmap() { Width = tabletW, Height = tabletH };
+            pixelsbmp.TexturePixels = pixels;
 
             return pixels;
         }
