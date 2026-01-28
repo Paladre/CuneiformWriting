@@ -170,6 +170,7 @@ namespace CuneiformWriting.Gui
                         };
                         strokes.Add(newStroke);
                         SendSaveToServer();
+                        
 
                         strokeMeshes.Add(ghostMesh);
                         ghostMesh = null;

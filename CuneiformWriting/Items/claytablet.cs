@@ -99,6 +99,9 @@ namespace CuneiformWriting.Items
         int tabletW = 480;
 
         Dictionary<int, MultiTextureMeshRef> meshrefs => ObjectCacheUtil.GetOrCreate(api, "tabletmeshrefs", () => new Dictionary<int, MultiTextureMeshRef>());
+        Dictionary<string, TabletRenderCache> TabletCache = new();
+
+        private bool _shouldUpdate = false;
 
         //string color;
         //string state;
@@ -148,6 +151,7 @@ namespace CuneiformWriting.Items
             //        handHandling = EnumHandHandling.PreventDefault;
             //    }
             //}
+            this._shouldUpdate = true;
             
         }
 
@@ -160,8 +164,20 @@ namespace CuneiformWriting.Items
             //if (target == EnumItemRenderTarget.Gui) return;
 
             //if (target != EnumItemRenderTarget.Gui) capi.ShowChatMessage("last code part : " + codePart);
+            if (_shouldUpdate)
+            {
+                //update
+                byte[] data = itemstack.Attributes.GetBytes("cuneiform");
+                int[] bgra = BakePixels(itemstack, tabletW, tabletH);
 
-            byte[] data = itemstack.Attributes.GetBytes("cuneiform");
+                LoadedTexture top = new LoadedTexture(capi, 0, tabletW, tabletH);
+                capi.Render.LoadOrUpdateTextureFromBgra(bgra, false, 0, ref top);
+
+
+                _shouldUpdate = false;
+            }
+
+            //byte[] data = itemstack.Attributes.GetBytes("cuneiform");
 
             //if (data == null || data.Length == 0)
             //{
