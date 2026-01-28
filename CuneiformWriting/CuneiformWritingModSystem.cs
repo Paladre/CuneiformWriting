@@ -80,7 +80,7 @@ namespace CuneiformWriting
             return tree.ToBytes();
         }
 
-        public Dictionary<string, TabletRenderCache> TabletCache = new();
+        
 
         public class TabletRenderCache
         {

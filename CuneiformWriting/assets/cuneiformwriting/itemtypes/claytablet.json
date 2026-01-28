@@ -32,7 +32,7 @@
     }
   ],
   "attributes": {
-    "isClayTabletEditable": true,
+    "isClayTabletEditable": true
   },
   "combustiblePropsByType": {
     "claytablet-fire-raw": {
