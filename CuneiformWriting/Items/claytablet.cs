@@ -1,5 +1,6 @@
 ﻿
 
+using Cairo.Freetype;
 using CuneiformWriting.Gui;
 using HarmonyLib;
 using System;
@@ -27,14 +28,8 @@ namespace CuneiformWriting.Items
         int tabletH = 640;
         int tabletW = 480;
 
-        //public Item BlankVariant { get; private set; }
 
-        private Dictionary<string, TabletRenderCache> _tabletCache = new();
-        //private TabletRenderCache _thiscache;
-
-        private LoadedTexture _tabletTexture;
-
-        private MeshRef _tabletMesh;
+        private Dictionary<string, TabletRenderCache> _tabletCache = new Dictionary<string, TabletRenderCache>();
 
         public bool AllowHeldIdleHandAnim(Entity forEntity, ItemSlot slot, EnumHand hand)
         {
@@ -45,9 +40,12 @@ namespace CuneiformWriting.Items
         {
             base.OnLoaded(api);
             cApi = api as ICoreClientAPI;
+            //MeshData backMesh;
+            //AssetLocation loc = new AssetLocation(CuneiformWritingModSystem.ModId + ":shapes/item/claytablet.json");
+            //var shape = cApi.Assets.Get(loc).ToObject<Shape>();
+            //cApi.Tesselator.TesselateItem(Clone(), out backMesh);
+            //this._tabletMeshRef = cApi.Render.UploadMesh(backMesh);
 
-            
-            
             //if (Variant.ContainsKey("color") && Variant.ContainsKey("state"))
             //{
             //    //string color = Variant["color"];
@@ -62,61 +60,23 @@ namespace CuneiformWriting.Items
         public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handHandling)
         {
             base.OnHeldInteractStart(slot, byEntity, blockSel, entitySel, firstEvent, ref handHandling);
-
-            //ItemSlot leftSlot = byEntity.LeftHandItemSlot;
-
-            //if (isEditable(slot, leftSlot) && !byEntity.Controls.ShiftKey)
-            //{
-            //    if (byEntity.World.Side == EnumAppSide.Client)
-            //    {
-            //        ICoreClientAPI capi = byEntity.World.Api as ICoreClientAPI;
-
-            //        new GuiCuneiform(capi, slot, this).TryOpen();
-
-            //        handHandling = EnumHandHandling.PreventDefault;
-            //    }
-            //}
             
         }
 
         public override void OnBeforeRender(ICoreClientAPI capi, ItemStack itemstack, EnumItemRenderTarget target, ref ItemRenderInfo renderinfo)
         {
 
+
             base.OnBeforeRender(capi, itemstack, target, ref renderinfo);
 
             // Only render baked version in world / hand
-            //if (target == EnumItemRenderTarget.Gui) return;
+            if (target == EnumItemRenderTarget.Gui) return;
 
-            
-
-            byte[] data = itemstack.Attributes.GetBytes("cuneiform");
+            if (!itemstack.TempAttributes.HasAttribute("tabletCacheId"))
+            {
+                itemstack.TempAttributes.SetString("tabletCacheId", Guid.NewGuid().ToString());
+            }
             string cacheId = itemstack.TempAttributes.GetString("tabletCacheId");
-
-            if (data == null || data.Length == 0)
-            {
-                if (cacheId !=  null)
-                {
-                    this._tabletCache[cacheId] = new TabletRenderCache();
-                }
-                return;
-            }
-
-            
-
-            //var system = capi.ModLoader.GetModSystem<CuneiformWritingModSystem>();
-            //var cacheDict = this._tabletCache;
-
-            int hash = HashBytes(data);
-
-            
-
-            if (cacheId == null)
-            {
-                cacheId = Guid.NewGuid().ToString();
-                itemstack.TempAttributes.SetString("tabletCacheId", cacheId);
-            }
-
-            //capi.Logger.Notification($"[TabletRender] cacheId={cacheId} hash={hash}");
 
             TabletRenderCache cache;
 
@@ -126,71 +86,29 @@ namespace CuneiformWriting.Items
                 this._tabletCache[cacheId] = cache;
             }
 
-            if (hash != cache.LastHash)
+            if (this._tabletCache[cacheId].ModelRef != null)
             {
-                cache.LastHash = hash;
-
-                cache.AttachedOverlay = false;
-
-                RebuildBakedTexture(capi, itemstack, cache);
-
-                capi.ShowChatMessage("[TabletRender] hash and LastHash different, Target is " + target + " for item : " + itemstack.Collectible.Code);
+                renderinfo.CullFaces = true;
+                renderinfo.ModelRef = this._tabletCache[cacheId].ModelRef;
+                renderinfo.NormalShaded = false;
             }
 
-            if (cache.ModelRef == null && data != null)
-            {
-                RebuildBakedTexture(capi, itemstack, cache);
-                capi.ShowChatMessage("[TabletRender] Modelref is null, Target is " + target + "for item : " + itemstack.Collectible.Code);
-            }
+            if (itemstack.Attributes.TryGetBool("shouldTabletRefresh") != true) return;
+            //capi.ShowChatMessage("Should update");
 
-            if (!cache.AttachedOverlay)
-            {
-                //this._tabletTexture = new LoadedTexture(cApi);
-                //AssetLocation texPath;
-                //if (LastCodePart() == "raw")
-                //{
-                //    texPath = new AssetLocation("block/clay/" + LastCodePart(1) + "clay.png");
-                //    //cApi.ShowChatMessage("block/clay/" + LastCodePart(1) + "clay.png");
-                //}
-                //else
-                //{
-                //    //cApi.ShowChatMessage("block/clay/hardened/" + LastCodePart(1) + ".png");
-                //    texPath = new AssetLocation("block/clay/hardened/" + LastCodePart(1) + ".png");
-                //}
-                //cApi.Render.GetOrLoadTexture(texPath, ref this._tabletTexture);
-                //MeshData mesh;
-                //var loc = AssetLocation.Create("cuneiformwriting:shapes/item/claytablet.json");
-                //var asset = cApi.Assets.TryGet(loc);
-                //var shape = asset.ToObject<Shape>();
-                //cApi.Tesselator.TesselateShape(this, shape, out mesh);
-                //this._tabletMesh = cApi.Render.UploadMesh(mesh);
+            RebuildBakedTexture(capi, itemstack, cache, cacheId);
 
-                cache.ModelRef = new MultiTextureMeshRef(
-                    new[] { renderinfo.ModelRef.meshrefs[0], cache.MeshRef},
-                    new[] { renderinfo.ModelRef.textureids[0], cache.Texture.TextureId}
-                );
+            MultiTextureMeshRef modelRef;
 
-                cache.AttachedOverlay = true;
-                capi.ShowChatMessage("[TabletRender] New Model Ref for " + itemstack.Collectible.Code);
-            }
+            modelRef = new MultiTextureMeshRef(
+                new[] { renderinfo.ModelRef.meshrefs[0], this._tabletCache[cacheId].MeshRef },
+                new[] { renderinfo.ModelRef.textureids[0], this._tabletCache[cacheId].Texture.TextureId }
+            );
+            this._tabletCache[cacheId].ModelRef = modelRef;
 
-
-            //LoadedTexture overlayTexture = cache.Texture;
-            //float overlayOpacity = 0f;
-
-            //renderinfo.OverlayOpacity = overlayOpacity;
-            //renderinfo.OverlayTexture = overlayTexture;
-
-            renderinfo.CullFaces = true;
-            renderinfo.ModelRef = cache.ModelRef;
-            //capi.Render.BindTexture2d(cache.Texture.TextureId);
-            //capi.Render.GlGenerateTex2DMipmaps();
-            renderinfo.NormalShaded = true;
-            //if (cache.ModelRef != null && cache.ModelRef.meshrefs.Length > 1)
-            //{
-            //    cApi.Render.UpdateMesh(cache.ModelRef.meshrefs[1], cache.MeshData);
-            //} 
-            
+            itemstack.Attributes.SetBool("shouldTabletRefresh", false);
+            //capi.ShowChatMessage("Has updated");
+            capi.Render.UpdateMesh(this._tabletCache[cacheId].ModelRef.meshrefs[1], this._tabletCache[cacheId].MeshData);
 
         }
 
@@ -235,7 +153,7 @@ namespace CuneiformWriting.Items
             return false;
         }
 
-        void RebuildBakedTexture(ICoreClientAPI capi, ItemStack stack, TabletRenderCache cache)
+        void RebuildBakedTexture(ICoreClientAPI capi, ItemStack stack, TabletRenderCache cache, string cacheId)
         {
 
             int[] rgba = BakePixels(stack, tabletW, tabletH);
@@ -289,11 +207,7 @@ namespace CuneiformWriting.Items
 
                 capi.Render.UpdateMesh(cache.MeshRef, cache.MeshData);
             }
-        }
-
-        private static bool isEditable(ItemSlot slot, ItemSlot leftSlot)
-        {
-            return leftSlot.Itemstack?.Collectible.Attributes?.IsTrue("isCuneiformStylus") == true && slot.Itemstack?.Collectible.Attributes?.IsTrue("isClayTabletEditable") == true;
+            this._tabletCache[cacheId] = cache;
         }
 
         private static bool isEditable(Entity forEntity)
@@ -305,58 +219,6 @@ namespace CuneiformWriting.Items
             return false;
         }
 
-
-        public List<CuneiformStroke> LoadStrokes(ItemStack stack)
-        {
-            List<CuneiformStroke> result = new List<CuneiformStroke>();
-
-            if (stack == null)
-            {
-                return result;
-            }
-
-            if (stack.Attributes == null ||
-                !stack.Attributes.HasAttribute("cuneiform"))
-            {
-                return result;
-            }
-
-            byte[] bytes = stack.Attributes.GetBytes("cuneiform");
-
-            if (bytes == null || bytes.Length == 0)
-            {
-                return result;
-            }
-
-            TreeAttribute tree;
-
-            try
-            {
-                tree = TreeAttribute.CreateFromBytes(bytes);
-            }
-            catch
-            {
-                return result;
-            }
-
-            int count = tree.GetInt("count");
-
-            for (int i = 0; i < count; i++)
-            {
-                CuneiformStroke s = new CuneiformStroke();
-
-                s.x1 = tree.GetFloat("x1" + i);
-                s.y1 = tree.GetFloat("y1" + i);
-                s.x2 = tree.GetFloat("x2" + i);
-                s.y2 = tree.GetFloat("y2" + i);
-                s.thicknessDelta = tree.GetFloat("thicknessDelta" + i);
-                s.typeofstroke = (StrokeType)tree.GetInt("t" + i, (int)StrokeType.stroke);
-
-                result.Add(s);
-            }
-
-            return result;
-        }
 
         void FillPolygon(int[] pixels, int W, int H, Vec2i[] poly, int color)
         {
@@ -454,24 +316,9 @@ namespace CuneiformWriting.Items
             return indices;
         }
 
-        int HashBytes(byte[] data)
-        {
-            unchecked
-            {
-                int hash = 17;
-
-                for (int i = 0; i < data.Length; i++)
-                {
-                    hash = hash * 31 + data[i];
-                }
-
-                return hash;
-            }
-        }
-
         int[] BakePixels(ItemStack stack, int width, int height)
         {
-            List<CuneiformStroke> strokes = LoadStrokes(stack);
+            List<CuneiformStroke> strokes = Utils.StrokesUtils.LoadStrokes(stack);
 
             //AssetLocation texPath;
             //if (LastCodePart() == "raw")
