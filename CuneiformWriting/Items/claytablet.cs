@@ -395,9 +395,30 @@ namespace CuneiformWriting.Items
             return pixels;
         }
 
-        //private LoadedTexture _tabletTexture;
-
-        //private MeshRef _tabletMesh;
+        public override void OnUnloaded(ICoreAPI api)
+        {
+            base.OnUnloaded(api);
+            foreach (TabletRenderCache cache in this._tabletCache.Values)
+            {
+                if (cache.Texture != null)
+                {
+                    cache.Texture.Dispose();
+                }
+                if (cache.ModelRef != null)
+                {
+                    cache.ModelRef.Dispose();
+                }
+                if (cache.MeshRef != null) 
+                { 
+                    cache.MeshRef.Dispose(); 
+                }
+                if (cache.MeshData != null)
+                {
+                    cache.MeshData.Dispose();
+                }
+            }
+            this._tabletCache.Clear();
+        }
 
         
     }
