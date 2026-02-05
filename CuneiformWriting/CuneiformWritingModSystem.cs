@@ -72,6 +72,17 @@ namespace CuneiformWriting
             //slot.MarkDirty();
         }
 
+        //private void OnEraseFromClient(IServerPlayer player)
+        //{
+        //    var slot = player.InventoryManager.OffhandHotbarSlot;
+
+        //    if (slot == null) return;
+
+        //    slot.Itemstack.Attributes.RemoveAttribute("cuneiform");
+        //    slot.Itemstack.Attributes.SetBool("shouldTabletRefresh", true);
+        //    slot.MarkDirty();
+        //}
+
         public void BeginEdit(IPlayer player, ItemSlot slot)
         {
             nowEditing[player.PlayerUID] = slot;
@@ -94,10 +105,8 @@ namespace CuneiformWriting
             nowEditing.Remove(player.PlayerUID);
         }
 
-        //public void CancelEdit(IPlayer player)
+        //public void EraseTablet(IPlayer player)
         //{
-        //    nowEditing.Remove(player.PlayerUID);
-
         //    if (Api is ICoreClientAPI capi)
         //    {
         //        capi.Network.GetChannel(CuneiformWritingModSystem.ModId).SendPacket(new PacketSaveTablet());

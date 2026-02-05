@@ -113,7 +113,7 @@ namespace CuneiformWriting.Gui
 
             foreach (var mesh in strokeMeshes)
                 mesh.Dispose();
-            data = SerializeStrokes();
+            data = Utils.StrokesUtils.SerializeStrokes(strokes);
 
             base.OnGuiClosed();
         }
@@ -508,26 +508,7 @@ namespace CuneiformWriting.Gui
                 y - length / 4f >= 0f;
         }
 
-        byte[] SerializeStrokes()
-        {
-            TreeAttribute tree = new TreeAttribute();
-
-            tree.SetInt("count", strokes.Count);
-
-            for (int i = 0; i < strokes.Count; i++)
-            {
-                var s = strokes[i];
-
-                tree.SetFloat("x1" + i, s.x1);
-                tree.SetFloat("y1" + i, s.y1);
-                tree.SetFloat("x2" + i, s.x2);
-                tree.SetFloat("y2" + i, s.y2);
-                tree.SetFloat("thicknessDelta" + i, s.thicknessDelta);
-                tree.SetInt("t" + i, (int)s.typeofstroke);
-            }
-
-            return tree.ToBytes();
-        }
+        
 
         
 

@@ -14,6 +14,7 @@ using Vintagestory.API.MathTools;
 using Vintagestory.API.Util;
 using Vintagestory.GameContent;
 using static CuneiformWriting.CuneiformWritingModSystem;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CuneiformWriting.Items
 {
@@ -28,7 +29,6 @@ namespace CuneiformWriting.Items
         int tabletH = 640;
         int tabletW = 480;
 
-
         private Dictionary<string, TabletRenderCache> _tabletCache = new Dictionary<string, TabletRenderCache>();
 
         public bool AllowHeldIdleHandAnim(Entity forEntity, ItemSlot slot, EnumHand hand)
@@ -40,6 +40,7 @@ namespace CuneiformWriting.Items
         {
             base.OnLoaded(api);
             cApi = api as ICoreClientAPI;
+            //this._emptyData = Utils.StrokesUtils.SerializeEmpty();
             //MeshData backMesh;
             //AssetLocation loc = new AssetLocation(CuneiformWritingModSystem.ModId + ":shapes/item/claytablet.json");
             //var shape = cApi.Assets.Get(loc).ToObject<Shape>();
@@ -132,26 +133,27 @@ namespace CuneiformWriting.Items
             return base.GetHeldTpUseAnimation(activeHotbarSlot, forEntity);
         }
 
-        public override void OnGroundIdle(EntityItem entityItem)
-        {
-            base.OnGroundIdle(entityItem);
+        //public override void OnGroundIdle(EntityItem entityItem)
+        //{
+        //    base.OnGroundIdle(entityItem);
 
-            IWorldAccessor world = entityItem.World;
-            if (world.Side != EnumAppSide.Server) return;
+        //    IWorldAccessor world = entityItem.World;
+        //    if (world.Side != EnumAppSide.Server) return;
 
-            if (!canBeErased(entityItem)) return;
+        //    if (!canBeErased(entityItem)) return;
 
-            if (entityItem.Swimming && world.Rand.NextDouble() < 0.01)
-            {
-                entityItem.Itemstack.Attributes.RemoveAttribute("cuneiform");
-            }
-        }
+        //    if (entityItem.Swimming && world.Rand.NextDouble() < 0.01)
+        //    {
+        //        entityItem.Itemstack.Attributes.RemoveAttribute("cuneiform");
+        //        entityItem.Itemstack.Attributes.SetBool("shouldTabletRefresh", true);
+        //    }
+        //}
 
-        private static bool canBeErased(EntityItem entityItem)
-        {
-            if (entityItem.Itemstack?.Collectible.Attributes?.IsTrue("isClayTabletEditable") == true && entityItem.Itemstack.Attributes.HasAttribute("cuneiform")) return true;
-            return false;
-        }
+        //private static bool canBeErased(EntityItem entityItem)
+        //{
+        //    if (entityItem.Itemstack?.Collectible.Attributes?.IsTrue("isClayTabletEditable") == true && entityItem.Itemstack.Attributes.HasAttribute("cuneiform")) return true;
+        //    return false;
+        //}
 
         void RebuildBakedTexture(ICoreClientAPI capi, ItemStack stack, TabletRenderCache cache, string cacheId)
         {
@@ -318,8 +320,6 @@ namespace CuneiformWriting.Items
 
         int[] BakePixels(ItemStack stack, int width, int height)
         {
-            List<CuneiformStroke> strokes = Utils.StrokesUtils.LoadStrokes(stack);
-
             //AssetLocation texPath;
             //if (LastCodePart() == "raw")
             //{
@@ -356,6 +356,11 @@ namespace CuneiformWriting.Items
                 pixels[i] = transparent;
             }
 
+            if (!stack.Attributes.HasAttribute("cuneiform"))
+            {
+                return pixels;
+            }
+
             //int coeff = height / 32;
 
             //for (int i = 0; i < pixels.Length; i++)
@@ -381,6 +386,7 @@ namespace CuneiformWriting.Items
 
             //int ink = basePixels[24];
 
+            List<CuneiformStroke> strokes = Utils.StrokesUtils.LoadStrokes(stack);
             //  rasterize strokes 
             foreach (var s in strokes)
             {

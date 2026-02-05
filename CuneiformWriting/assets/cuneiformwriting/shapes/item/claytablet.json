@@ -3,8 +3,8 @@
 		"allAngles": false,
 		"entityTextureMode": true
 	},
-	"textureWidth": 32,
-	"textureHeight": 32,
+	"textureWidth": 16,
+	"textureHeight": 16,
 	"textureSizes": {
 	},
 	"textures": {
@@ -23,7 +23,7 @@
 				"south": { "texture": "#base", "uv": [ 14.0, 0.0, 15.0, 12.0 ], "rotation": 90, "windMode": [-1,-1,-1,-1] },
 				"west": { "texture": "#base", "uv": [ 13.0, 0.0, 14.0, 16.0 ], "rotation": 90, "windMode": [-1,-1,-1,-1] },
 				"up": { "texture": "#base", "uv": [ 0.0, 0.0, 12.0, 16.0 ], "snapUv": false, "windMode": [-1,-1,-1,-1] },
-				"down": { "texture": "#base", "uv": [ 0.0, 16.0, 12.0, 32.0 ], "windMode": [-1,-1,-1,-1] }
+				"down": { "texture": "#base", "uv": [ 0.0, 0.0, 12.0, 16.0 ], "windMode": [-1,-1,-1,-1] }
 			}
 		}
 	]}
