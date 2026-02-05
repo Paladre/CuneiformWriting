@@ -18,54 +18,43 @@ namespace CuneiformWriting.Items
     {
         CuneiformWritingModSystem modSystem;
         ICoreClientAPI capi;
-
-        public bool isErasing = false;
-
-        public static byte[] emptydata;
-        List<CuneiformStroke> strokes = new List<CuneiformStroke>();
+        WorldInteraction[] interactions;
 
         public override void OnLoaded(ICoreAPI api)
         {
             base.OnLoaded(api);
             capi = api as ICoreClientAPI;
             modSystem = api.ModLoader.GetModSystem<CuneiformWritingModSystem>();
-            CuneiformStroke newStroke = new CuneiformStroke
-            {
-                x1 = 0,
-                y1 = 0,
-                x2 = 0,
-                y2 = 0,
-                thicknessDelta = 0,
-                typeofstroke = 0
-            };
-            strokes.Add(newStroke);
-            strokes.Remove(newStroke);
-            emptydata = Utils.StrokesUtils.SerializeStrokes(strokes);
             // interactions
+
+            interactions = ObjectCacheUtil.GetOrCreate(api, "stylusInteractions", () =>
+            {
+                List<ItemStack> stylusStacks = new List<ItemStack>();
+                foreach (var collobj in api.World.Collectibles)
+                {
+                    if (collobj.Attributes != null && collobj.Attributes.IsTrue("isClayTabletEditable"))
+                    {
+                        stylusStacks.Add(new ItemStack(collobj));
+                    }
+                }
+
+                return new WorldInteraction[]
+                {
+                    new WorldInteraction
+                    {
+                        MouseButton = EnumMouseButton.Right,
+                        Itemstacks = stylusStacks.ToArray(),
+                        ActionLangCode = "cuneiformwriting:heldhelp-writetablet"
+                    }
+                };
+            }
+            );
+
         }
         public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handHandling)
         {
             var player = (byEntity as EntityPlayer).Player;
             ItemSlot leftSlot = byEntity.LeftHandItemSlot;
-            //if (byEntity.Controls.ShiftKey)
-            //{
-            //    //leftSlot.Itemstack.Attributes.RemoveAttribute("cuneiform");
-            //    //leftSlot.Itemstack.Attributes.SetBool("shouldTabletRefresh", true);
-            //    ////isErasing = false;
-            //    //leftSlot.MarkDirty();
-            //    //isErasing = true;
-            //    //base.OnHeldInteractStart(slot, byEntity, blockSel, entitySel, firstEvent, ref handHandling);
-            //    //byte[] emptyData = Utils.StrokesUtils.SerializeStrokes(new List<CuneiformStroke>());
-            //    leftSlot.Itemstack.Attributes.RemoveAttribute("cuneiform");
-            //    leftSlot.Itemstack.Attributes.SetBool("shouldTabletRefresh", true);
-
-            //    leftSlot.MarkDirty();
-
-            //    //capi.Network.GetChannel(CuneiformWritingModSystem.ModId).SendPacket(new PacketSaveTablet() { Data = emptydata });
-            //    return;
-            //}
-
-            
 
             if (isRawClayTablet(leftSlot))
             {
@@ -73,12 +62,6 @@ namespace CuneiformWriting.Items
 
                 if (api.Side == EnumAppSide.Client)
                 {
-                    if (byEntity.Controls.ShiftKey)
-                    {
-                        modSystem.EndEdit(player, emptydata);
-                        handHandling = EnumHandHandling.PreventDefault;
-                        return;
-                    }
                     var dlg = new GuiCuneiform(api as ICoreClientAPI, leftSlot.Itemstack);
                     dlg.OnClosed += () =>
                     {
@@ -109,12 +92,7 @@ namespace CuneiformWriting.Items
 
         public override void OnHeldInteractStop(float secondsUsed, ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel)
         {
-            //isErasing = false;
             base.OnHeldInteractStop(secondsUsed, slot, byEntity, blockSel, entitySel);
-
-            //ICoreClientAPI capi = byEntity.World.Api as ICoreClientAPI;
-            ////capi.SendChatMessage("[Cuneiform Writing] Stylus OnHeldInteractStop used for " + secondsUsed);
-            //isWriting = false;
         }
 
         //public override void OnGroundIdle(EntityItem entityItem)
@@ -144,8 +122,10 @@ namespace CuneiformWriting.Items
             return slot.Itemstack?.Collectible.Attributes?.IsTrue("isClayTabletEditable") == true;
         }
 
-        private static bool isWriting;
-        
+        public override WorldInteraction[] GetHeldInteractionHelp(ItemSlot inSlot)
+        {
+            return interactions.Append(base.GetHeldInteractionHelp(inSlot));
+        }
 
     }
 }

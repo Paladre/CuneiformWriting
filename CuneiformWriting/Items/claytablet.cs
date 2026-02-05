@@ -25,6 +25,7 @@ namespace CuneiformWriting.Items
         Vec3f origin = new Vec3f(0,0,0);
 
         ICoreClientAPI cApi;
+        WorldInteraction[] interactions;
 
         int tabletH = 640;
         int tabletW = 480;
@@ -40,21 +41,8 @@ namespace CuneiformWriting.Items
         {
             base.OnLoaded(api);
             cApi = api as ICoreClientAPI;
-            //this._emptyData = Utils.StrokesUtils.SerializeEmpty();
-            //MeshData backMesh;
-            //AssetLocation loc = new AssetLocation(CuneiformWritingModSystem.ModId + ":shapes/item/claytablet.json");
-            //var shape = cApi.Assets.Get(loc).ToObject<Shape>();
-            //cApi.Tesselator.TesselateItem(Clone(), out backMesh);
-            //this._tabletMeshRef = cApi.Render.UploadMesh(backMesh);
 
-            //if (Variant.ContainsKey("color") && Variant.ContainsKey("state"))
-            //{
-            //    //string color = Variant["color"];
-            //    //string state = Variant["state"];
-            //    //AssetLocation loc = CodeWithVariants(["color", "state"], [color, state]);
-            //    //BlankVariant = api.World.GetItem(loc);
-            //    //this._thiscache = new TabletRenderCache();
-            //}
+            
         }
 
 
