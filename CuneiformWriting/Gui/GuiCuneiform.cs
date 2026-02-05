@@ -141,6 +141,8 @@ namespace CuneiformWriting.Gui
                 float localX = (e.X - (float)tabletBounds.absX) / (float)tabletBounds.OuterWidth;
                 float localY = (e.Y - (float)tabletBounds.absY) / (float)tabletBounds.OuterHeight;
 
+                //capi.ShowChatMessage("startX: " + localX + "; startY: " + localY);
+
                 strokeStart = new Vec2f(localX, localY);
 
                 thicknessDelta = 0.015f;
@@ -186,10 +188,16 @@ namespace CuneiformWriting.Gui
         {
             if (!isDrawing) return;
 
-            if (!IsInsideTablet(e.X, e.Y)) return;
-
             float localX = (e.X - (float)tabletBounds.absX) / (float)tabletBounds.OuterWidth;
             float localY = (e.Y - (float)tabletBounds.absY) / (float)tabletBounds.OuterHeight;
+
+            localX = GameMath.Clamp(localX, 0, 1);
+            localY = GameMath.Clamp(localY, 0, 1);
+
+            if (type == StrokeType.hook)
+            {
+                localX = GameMath.Clamp(localX, strokeStart.X, strokeStart.X + GameMath.Min(strokeStart.Y, 1f - strokeStart.Y) * (4f/3f));
+            }
 
             Vec2f current = new Vec2f(localX, localY);
             Vec2f delta = current - strokeStart;
@@ -201,14 +209,12 @@ namespace CuneiformWriting.Gui
 
             if (type == StrokeType.hook)
             {
-                length = dx * 4f;
+                length = dx * 2f;
             }
             else
             {
                 length = MathF.Sqrt(dx * dx + dy * dy) * 2f;
             }
-
-            if (type == StrokeType.hook && (!IsHookInside(strokeStart.Y, delta.X * 4f) || dx * 4f < 0f)) return;
 
             float angle = (float)Math.Atan2(dy, dx);
 
@@ -381,7 +387,7 @@ namespace CuneiformWriting.Gui
                 for (int i = 0; i < 4; i++)
                 {
                     float x = baseVerts[i].X * length;
-                    float y = baseVerts[i].Y * length;
+                    float y = baseVerts[i].Y * length * 2f;
 
                     mesh.xyz[i * 3 + 0] = x;
                     mesh.xyz[i * 3 + 1] = y;
@@ -441,7 +447,7 @@ namespace CuneiformWriting.Gui
 
                 if (s.typeofstroke == StrokeType.hook)
                 {
-                    length = dx * 4f;
+                    length = dx * 2f;
                 }
                 else
                 {
@@ -504,8 +510,8 @@ namespace CuneiformWriting.Gui
 
         bool IsHookInside(float y, float length)
         {
-            return y + length / 4f <= 1f &&
-                y - length / 4f >= 0f;
+            return y + length <= 1f &&
+                y - length >= 0f;
         }
 
         
