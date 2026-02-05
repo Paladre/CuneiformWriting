@@ -25,10 +25,9 @@ namespace CuneiformWriting.Items
         Vec3f origin = new Vec3f(0,0,0);
 
         ICoreClientAPI cApi;
-        WorldInteraction[] interactions;
 
-        int tabletH = 640;
-        int tabletW = 480;
+        int tabletH = 1280;
+        int tabletW = 960;
 
         private Dictionary<string, TabletRenderCache> _tabletCache = new Dictionary<string, TabletRenderCache>();
 
