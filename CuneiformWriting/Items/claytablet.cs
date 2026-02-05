@@ -70,46 +70,54 @@ namespace CuneiformWriting.Items
 
             base.OnBeforeRender(capi, itemstack, target, ref renderinfo);
 
-            // Only render baked version in world / hand
             if (target == EnumItemRenderTarget.Gui) return;
 
-            if (!itemstack.TempAttributes.HasAttribute("tabletCacheId"))
-            {
-                itemstack.TempAttributes.SetString("tabletCacheId", Guid.NewGuid().ToString());
-            }
-            string cacheId = itemstack.TempAttributes.GetString("tabletCacheId");
+            byte[] cuneiformBytes = itemstack.Attributes.GetBytes("cuneiform");
+            int contentHash = Fnv1a32(cuneiformBytes);
 
-            TabletRenderCache cache;
+            string cacheId = $"{itemstack.Collectible.Code}:{(int)target}:{contentHash}";
 
-            if (!this._tabletCache.TryGetValue(cacheId, out cache))
+            var baseModelRef = renderinfo.ModelRef;
+            var baseMeshRef = baseModelRef?.meshrefs?.Length > 0 ? baseModelRef.meshrefs[0] : null;
+            var baseTexId = baseModelRef?.textureids?.Length > 0 ? baseModelRef.textureids[0] : 0;
+
+            if (!this._tabletCache.TryGetValue(cacheId, out TabletRenderCache cache))
             {
                 cache = new TabletRenderCache();
                 this._tabletCache[cacheId] = cache;
             }
 
-            if (this._tabletCache[cacheId].ModelRef != null)
+            if (cache.ModelRef != null)
             {
-                renderinfo.CullFaces = true;
-                renderinfo.ModelRef = this._tabletCache[cacheId].ModelRef;
+                renderinfo.CullFaces = false;
+                renderinfo.ModelRef = cache.ModelRef;
                 renderinfo.NormalShaded = false;
             }
 
-            if (itemstack.Attributes.TryGetBool("shouldTabletRefresh") != true) return;
-            //capi.ShowChatMessage("Should update");
+            bool hasWriting = cuneiformBytes != null && cuneiformBytes.Length > 0;
+            bool shouldRefresh = itemstack.Attributes.TryGetBool("shouldTabletRefresh") == true;
+
+            bool needsRebuild = shouldRefresh || (hasWriting && (cache.ModelRef == null || cache.LastHash != contentHash));
+            if (!needsRebuild) return;
 
             RebuildBakedTexture(capi, itemstack, cache, cacheId);
 
-            MultiTextureMeshRef modelRef;
+            if (baseMeshRef != null && cache.MeshRef != null && cache.Texture != null)
+            {
+                cache.ModelRef = new MultiTextureMeshRef(
+                    new[] { baseMeshRef, cache.MeshRef },
+                    new[] { baseTexId, cache.Texture.TextureId }
+                );
+                cache.LastHash = contentHash;
 
-            modelRef = new MultiTextureMeshRef(
-                new[] { renderinfo.ModelRef.meshrefs[0], this._tabletCache[cacheId].MeshRef },
-                new[] { renderinfo.ModelRef.textureids[0], this._tabletCache[cacheId].Texture.TextureId }
-            );
-            this._tabletCache[cacheId].ModelRef = modelRef;
+                renderinfo.CullFaces = false;
+                renderinfo.ModelRef = cache.ModelRef;
+                renderinfo.NormalShaded = false;
+
+                capi.Render.UpdateMesh(cache.ModelRef.meshrefs[1], cache.MeshData);
+            }
 
             itemstack.Attributes.SetBool("shouldTabletRefresh", false);
-            //capi.ShowChatMessage("Has updated");
-            capi.Render.UpdateMesh(this._tabletCache[cacheId].ModelRef.meshrefs[1], this._tabletCache[cacheId].MeshData);
 
         }
 
@@ -399,6 +407,26 @@ namespace CuneiformWriting.Items
             }
 
             return pixels;
+        }
+
+        static int Fnv1a32(byte[] data)
+        {
+            unchecked
+            {
+                const uint offset = 2166136261;
+                const uint prime = 16777619;
+                uint hash = offset;
+                if (data != null)
+                {
+                    for (int i = 0; i < data.Length; i++)
+                    {
+                        hash ^= data[i];
+                        hash *= prime;
+                    }
+                }
+                // Keep it positive-ish for easier debugging; collisions are acceptable at this scale.
+                return (int)hash;
+            }
         }
 
         public override void OnUnloaded(ICoreAPI api)
