@@ -432,7 +432,7 @@ namespace CuneiformWriting.Gui
 
         void RebuildMeshesFromStrokes()
         {
-            capi.Logger.Notification("Starting rebuild of {0} strokes", strokes.Count);
+            //capi.Logger.Notification("[Cuneiform Writing] Starting rebuild of {0} strokes", strokes.Count);
 
             int i = 0;
 
@@ -459,17 +459,17 @@ namespace CuneiformWriting.Gui
                 if (float.IsNaN(s.x1) || float.IsNaN(s.y1) ||
                     float.IsNaN(s.x2) || float.IsNaN(s.y2))
                 {
-                    capi.Logger.Error("Stroke {0} contains NaN!", i);
+                    capi.Logger.Error("[Cuneiform Writing] Stroke {0} contains NaN!", i);
                     continue;
                 }
 
                 if (length <= 0 || length > 5000)
                 {
-                    capi.Logger.Error("Stroke {0} bad length {1}", i, length);
+                    capi.Logger.Error("[Cuneiform Writing] Stroke {0} bad length {1}", i, length);
                     continue;
                 }
 
-                capi.Logger.Notification("Building mesh {0}", i);
+                //capi.Logger.Notification("[Cuneiform Writing] Building mesh {0}", i);
 
                 MeshData md;
                 try
@@ -483,21 +483,21 @@ namespace CuneiformWriting.Gui
                 }
                 catch (Exception e)
                 {
-                    capi.Logger.Error("BuildStrokeMesh crashed: " + e);
+                    capi.Logger.Error("[Cuneiform Writing] BuildStrokeMesh crashed: " + e);
                     continue;
                 }
 
                 md.Flags = new int[4];
 
 
-                capi.Logger.Notification("Uploading mesh {0}", i);
+                //capi.Logger.Notification("[Cuneiform Writing] Uploading mesh {0}", i);
 
                 MeshRef mr = capi.Render.UploadMesh(md);
 
                 strokeMeshes.Add(mr);
             }
 
-            capi.Logger.Notification("Rebuild finished");
+            //capi.Logger.Notification("[Cuneiform Writing] Rebuild finished");
         }
 
         bool IsInsideTablet(float x, float y)
