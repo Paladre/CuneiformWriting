@@ -4,7 +4,9 @@ using Cairo.Freetype;
 using CuneiformWriting.Gui;
 using HarmonyLib;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
@@ -48,6 +50,13 @@ namespace CuneiformWriting.Items
         public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handHandling)
         {
             base.OnHeldInteractStart(slot, byEntity, blockSel, entitySel, firstEvent, ref handHandling);
+            //if (byEntity.Controls.ShiftKey)
+            //{
+            //    int[] pixels = BakePixels(slot.Itemstack, tabletW, tabletH);
+            //    var bmp = new SKBitmap(tabletW, tabletH);
+            //    bmp.SetPixels(pixels);
+            //    bmp.Save("tablet.png");
+            //}
             
         }
 
@@ -127,28 +136,6 @@ namespace CuneiformWriting.Items
             }
             return base.GetHeldTpUseAnimation(activeHotbarSlot, forEntity);
         }
-
-        //public override void OnGroundIdle(EntityItem entityItem)
-        //{
-        //    base.OnGroundIdle(entityItem);
-
-        //    IWorldAccessor world = entityItem.World;
-        //    if (world.Side != EnumAppSide.Server) return;
-
-        //    if (!canBeErased(entityItem)) return;
-
-        //    if (entityItem.Swimming && world.Rand.NextDouble() < 0.01)
-        //    {
-        //        entityItem.Itemstack.Attributes.RemoveAttribute("cuneiform");
-        //        entityItem.Itemstack.Attributes.SetBool("shouldTabletRefresh", true);
-        //    }
-        //}
-
-        //private static bool canBeErased(EntityItem entityItem)
-        //{
-        //    if (entityItem.Itemstack?.Collectible.Attributes?.IsTrue("isClayTabletEditable") == true && entityItem.Itemstack.Attributes.HasAttribute("cuneiform")) return true;
-        //    return false;
-        //}
 
         void RebuildBakedTexture(ICoreClientAPI capi, ItemStack stack, TabletRenderCache cache, string cacheId)
         {
